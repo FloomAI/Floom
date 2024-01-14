@@ -2,7 +2,7 @@
 
 <img width="60%" src="/Assets/GitHub-Logo.png" title="Floom - AI Orchestration" />
 
-![25github-text.jpg](/Assets/25github-text.jpg) **Floom** orchestrates and executes Generative AI pipelines, <br/>Empowering **Developers** and **DevOps** to <ins>focus on what matters</ins>.
+![25github-text.jpg](/Assets/25github-text.jpg) **Floom** orchestrates and executes Generative AI pipelines, <br/>Empowering **Developers** to <ins>focus on what matters</ins>.
 <br/><br/> ✅ Enterprise-Grade ✅ Production-Ready ✅ Battle-Tested
 <br/> ![25github-text.jpg](/Assets/25github-text.jpg) **Floom** is now Open-Source and **100% FREE** for everyone (including commercial use).
   
