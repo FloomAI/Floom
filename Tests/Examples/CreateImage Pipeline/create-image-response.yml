@@ -1,0 +1,8 @@
+﻿schema: v1
+kind: Response
+id: create-image-response
+type: image
+resolution: 512x512
+options: 2
+#format: jpg
+#quality: 0.7

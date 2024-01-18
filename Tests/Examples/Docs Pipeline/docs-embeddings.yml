@@ -1,0 +1,7 @@
+﻿schema: v1
+kind: Embeddings
+id: docs-embeddings
+type: text  
+vendor: OpenAI
+model: text-embedding-ada-002
+apiKey: REMOVED

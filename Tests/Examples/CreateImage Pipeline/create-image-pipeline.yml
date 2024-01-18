@@ -1,0 +1,6 @@
+schema: v1
+kind: Pipeline
+id: create-image-pipeline
+model: create-image-model
+prompt: create-image-prompt
+response: create-image-response

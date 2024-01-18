@@ -1,0 +1,23 @@
+﻿schema: v1
+kind: Response
+id: docs-response
+type: text  
+language: English
+maxSentences: 3
+maxCharacters: 1500
+temperature: 0.9
+#blockCurseWords: true
+#blockDLP:
+#- CreditCards
+#- ApiKeys
+#- Medical-Information
+#- Adult
+#- Names
+#- IPAddress (ipv4/6)
+#- MacAddress
+#- PyshicalAddress
+#examples:
+# - "Turn your ignition key and press the main button."    
+# - "Turn on the radio using the red button." 
+# - "Open the engine bay, fill 5 Liters of oil." 
+referToData: false 

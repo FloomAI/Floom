@@ -1,0 +1,8 @@
+schema: v1
+kind: Data
+id: docs-data
+type: file
+path: /dev/test/documentation.pdf
+split: pages
+#embeddings: docs-embeddings
+#vectorStore: docs-vectorstore

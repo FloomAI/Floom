@@ -1,0 +1,806 @@
+{
+	"info": {
+		"_postman_id": "5c232553-0afa-4956-b87f-79139fc66509",
+		"name": "FirePrompt",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "667159"
+	},
+	"item": [
+		{
+			"name": "Models",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Model\r\nid: docs-model\r\nvendor: OpenAI\r\nmodel: text-davinci-003\r\napiKey: REMOVED",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Models/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Models",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply (image)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Model\r\nid: create-image-model\r\nvendor: OpenAI\r\nmodel: dall-e\r\napiKey: REMOVED",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Models/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Models",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "name: new-ds1",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Data",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Data"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Pipelines",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Pipeline\r\nid: docs-pipeline\r\nmodel: docs-model\r\nprompt: docs-prompt\r\nresponse: docs-response\r\nchatHistory: true\r\ndata:\r\n- docs-data",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Pipelines/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Pipelines",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply (image)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Pipeline\r\nid: create-image-pipeline\r\nmodel: create-image-model\r\nprompt: create-image-prompt\r\nresponse: create-image-response",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Pipelines",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Pipelines"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Run",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"pipelineId\": \"docs-pipeline\",\r\n    \"input\": \"Who's first US president?\",\r\n    \"variables\":\r\n    {\r\n        \"first_name\": \"max\"\r\n    }\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Pipelines/Run",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Pipelines",
+								"Run"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "name: new-ds1",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Data",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Data"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "Create (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/C:/Users/Unknown/Downloads/2013_1s/2013_1s.pdf"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Files",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Files"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Prompts",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Prompt\r\nid: docs-prompt\r\ntype: text\r\nsystem: \"You are a helpful assitant of BMW, a washing machine maker. Use the user's first name which is {{first_name}}.\"",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Prompts/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Prompts",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply (image)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Prompt\r\nid: create-image-prompt\r\ntype: text\r\nuser: \"Create a beatiful {{item}}\"",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Prompts/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Prompts",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Responses",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Response\r\nid: docs-response\r\ntype: text  \r\nlanguage: English\r\nmaxSentences: 3\r\nmaxCharacters: 1500\r\ntemperature: 0.9\r\nexamples:\r\n - \"Turn your ignition key and press the main button.\"    \r\n - \"Turn on the radio using the red button.\" \r\n - \"Open the engine bay, fill 5 Liters of oil.\" ",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Responses/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Responses",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply (image)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Response\r\nid: create-image-response\r\ntype: image\r\nresolution: 512x512\r\noptions: 2\r\nformat: jpg\r\nquality: 0.7",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Responses/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Responses",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Embeddings",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Embeddings\r\nid: docs-embeddings\r\ntype: text  \r\nvendor: OpenAI\r\nmodel: text-embedding-ada-002\r\napiKey: REMOVED",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Embeddings/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Embeddings",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "VectorStores",
+			"item": [
+				{
+					"name": "Apply (docs, pinecone)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: VectorStore\r\nid: docs-vectorstore\r\nvendor: Pinecone\r\napiKey: 0ea0f2ed-54bb-4d3e-878e-248af609a81b\r\nenvironment: us-west4-gcp-free",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/VectorStores/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"VectorStores",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Apply (docs, Milvus)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: VectorStore\r\nid: docs-vectorstore\r\nvendor: Milvus\r\nendpoint: 192.168.1.14\r\nport: 19530\r\nusername: root\r\npassword: Milvus",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/VectorStores/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"VectorStores",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Data",
+			"item": [
+				{
+					"name": "Apply (docs)",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "schema: v1\r\nkind: Data\r\nid: docs-data\r\ntype: file\r\nfileId: 1b5dde8e-0ea5-494b-90d9-d4cdb4528204\r\nsplit: pages\r\nembeddings: docs-embeddings\r\nvectorStore: docs-vectorstore",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Data/Apply",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Data",
+								"Apply"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get",
+					"protocolProfileBehavior": {
+						"disabledSystemHeaders": {
+							"content-type": true
+						}
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Api-Key",
+								"value": "{{Api-Key}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "text/yaml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "name: new-ds1",
+							"options": {
+								"raw": {
+									"language": "text"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{Api-Url}}/v1/Data",
+							"host": [
+								"{{Api-Url}}"
+							],
+							"path": [
+								"v1",
+								"Data"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Old",
+			"item": [
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

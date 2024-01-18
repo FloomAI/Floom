@@ -1,0 +1,5 @@
+﻿schema: v1
+kind: Prompt
+id: create-image-prompt
+type: text
+user: "Create a beatiful {{item}}"
