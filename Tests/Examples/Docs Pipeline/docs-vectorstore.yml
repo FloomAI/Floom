@@ -1,0 +1,6 @@
+schema: v1
+kind: VectorStore
+id: docs-vectorstore
+vendor: Pinecone
+apiKey: 0ea0f2ed-54bb-4d3e-878e-248af609a81b
+environment: us-west4-gcp-free

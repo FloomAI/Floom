@@ -1,0 +1,8 @@
+schema: v1
+kind: Pipeline
+id: docs-pipeline
+model: docs-model
+prompt: docs-prompt
+response: docs-response
+data:
+- docs-data
