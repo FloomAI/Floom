@@ -1,9 +1,6 @@
 using System.Text.Json.Serialization;
-using Floom.LLMs.OpenAi;
 using Floom.Logs;
 using Floom.Model.OpenAi;
-using Floom.Utils;
-using Floom.Vendors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Embeddings.OpenAi;

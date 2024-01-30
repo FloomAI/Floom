@@ -4,7 +4,7 @@ using UglyToad.PdfPig.Content;
 using Xceed.Document.NET;
 using Xceed.Words.NET;
 
-namespace Floom.Misc;
+namespace Floom.Utils;
 
 public enum ExtractionMethod
 {

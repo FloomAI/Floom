@@ -1,19 +1,13 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Floom.Audit;
-using Floom.Auth;
 using Floom.Config;
-using Floom.Context.Embeddings;
-using Floom.Context.VectorStores;
 using Floom.Data;
-using Floom.Embeddings;
 using Floom.Embeddings.Ollama;
 using Floom.Embeddings.OpenAi;
 using Floom.Events;
-using Floom.LLMs;
 using Floom.LLMs.LLama;
 using Floom.LLMs.Ollama;
-using Floom.LLMs.OpenAi;
 using Floom.Logs;
 using Floom.Misc;
 using Floom.Model.OpenAi;
@@ -22,10 +16,7 @@ using Floom.Pipeline.Model;
 using Floom.Pipeline.Prompt;
 using Floom.Plugin;
 using Floom.Repository;
-using Floom.Services;
 using Floom.Utils;
-using Floom.VectorStores;
-using Floom.VectorStores.Engines;
 using Floom.Vendors;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -119,54 +110,18 @@ builder.Services.AddVersionedApiExplorer(
 
 #endregion
 
-#region MongoDB Setup
-
-// Register the IMongoDatabase instance for use in ApiKeyAuthorizationAttribute
-builder.Services.AddSingleton<IMongoClient>(new MongoClient(Configuration.MongoDb.ConnectionString()));
-
+builder.Services.AddSingleton<IMongoClient>(new MongoClient(MongoConfiguration.ConnectionString()));
+builder.Services.AddSingleton<EventsManager>();
 
 // Adding services to DI container
-builder.Services.AddScoped<IModelsService, ModelsService>();
-builder.Services.AddTransient(provider => new Lazy<IModelsService>(provider.GetRequiredService<IModelsService>));
-builder.Services.AddScoped<IDataService, DataService>();
-builder.Services.AddTransient(provider => new Lazy<IDataService>(provider.GetRequiredService<IDataService>));
-builder.Services.AddScoped<IEmbeddingsService, EmbeddingsService>();
-builder.Services.AddTransient(provider =>
-    new Lazy<IEmbeddingsService>(provider.GetRequiredService<IEmbeddingsService>));
-builder.Services.AddScoped<IVectorStoresService, VectorStoresService>();
-builder.Services.AddTransient(provider =>
-    new Lazy<IVectorStoresService>(provider.GetRequiredService<IVectorStoresService>));
-builder.Services.AddScoped<IPromptsService, PromptsService>();
-builder.Services.AddTransient(provider => new Lazy<IPromptsService>(provider.GetRequiredService<IPromptsService>));
-builder.Services.AddScoped<IResponsesService, ResponsesService>();
-builder.Services.AddTransient(provider => new Lazy<IResponsesService>(provider.GetRequiredService<IResponsesService>));
 builder.Services.AddScoped<IPipelinesService, PipelinesService>();
 builder.Services.AddTransient(provider => new Lazy<IPipelinesService>(provider.GetRequiredService<IPipelinesService>));
 
-#endregion
-
-// Adding use cases to DI container
-builder.Services.AddScoped<IDataApplyUseCase, DataApplyUseCase>();
-builder.Services.AddTransient(provider => new Lazy<IDataApplyUseCase>(provider.GetRequiredService<IDataApplyUseCase>));
-
-builder.Services.AddScoped<IApplyPipelineUseCase, ApplyPipelineUseCase>();
-builder.Services.AddTransient(provider =>
-    new Lazy<IApplyPipelineUseCase>(provider.GetRequiredService<IApplyPipelineUseCase>()));
-
-builder.Services.AddScoped<IRunPipelineUseCase, RunPipelineUseCase>();
-builder.Services.AddTransient(provider =>
-    new Lazy<IRunPipelineUseCase>(provider.GetRequiredService<IRunPipelineUseCase>()));
-
-builder.Services.AddScoped<IGetPipelineUseCase, GetPipelineUseCase>();
-
-builder.Services.AddSingleton<EventsManager>();
 builder.Services.AddSingleton<IPluginLoader, PluginLoader>();
+builder.Services.AddSingleton<IPluginContextCreator, PluginContextCreator>();
 
 builder.Services.AddSingleton<IPluginManifestLoader, PluginManifestLoader>();
 builder.Services.AddTransient(provider => new Lazy<IPluginManifestLoader>(provider.GetRequiredService<IPluginManifestLoader>));
-
-builder.Services.AddScoped<IModelStageHandler, ModelStageHandler>();
-builder.Services.AddScoped<IPromptStageHandler, PromptStageHandler>();
 
 builder.Services.AddScoped<IPipelineCommitter, PipelineCommitter>();
 builder.Services.AddTransient(provider => new Lazy<IPipelineCommitter>(provider.GetRequiredService<IPipelineCommitter>()));
@@ -174,21 +129,14 @@ builder.Services.AddTransient(provider => new Lazy<IPipelineCommitter>(provider.
 builder.Services.AddScoped<IPipelineExecutor, PipelineExecutor>();
 builder.Services.AddTransient(provider => new Lazy<IPipelineExecutor>(provider.GetRequiredService<IPipelineExecutor>()));
 
-builder.Services.AddSingleton<IPluginContextCreator, PluginContextCreator>();
+builder.Services.AddScoped<IModelStageHandler, ModelStageHandler>();
+builder.Services.AddScoped<IPromptStageHandler, PromptStageHandler>();
 
 builder.Services.AddSingleton<FloomAssetsRepository>();
 builder.Services.AddSingleton<FloomAuditService>();
 
-//Add Dynamic Helpers
-// builder.Services.AddScoped<IDynamicHelpersService, DynamicHelpersService>();
-
-// builder.Services.AddSingleton<IRepositoryFactory, RepositoryFactory>();
 builder.Services.AddTransient<IRepositoryFactory, RepositoryFactory>();
 
-// LLM Factory
-builder.Services.AddScoped<ILLMFactory, LLMFactory>();
-builder.Services.AddScoped(provider => new Lazy<ILLMFactory>(provider.GetRequiredService<ILLMFactory>));
-builder.Services.AddScoped<OpenAiLLM>();
 builder.Services.AddScoped<OpenAiClient>();
 builder.Services.AddScoped<OllamaLLM>();
 builder.Services.AddScoped<OllamaClient>();
@@ -198,11 +146,7 @@ builder.Services.AddScoped<LLamaLLM>();
 builder.Services.AddScoped<OpenAiEmbeddings>();
 builder.Services.AddScoped<OllamaEmbeddings>();
 
-// Vector Stores Factory
-builder.Services.AddScoped<Milvus>();
-
 var app = builder.Build();
-
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

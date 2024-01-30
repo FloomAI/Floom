@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using YamlDotNet.Serialization;
 
 namespace Floom.Controllers
 {

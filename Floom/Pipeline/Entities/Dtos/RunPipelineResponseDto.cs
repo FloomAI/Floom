@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Floom.Pipeline.Entities
+namespace Floom.Pipeline.Entities.Dtos
 {
     [BsonIgnoreExtraElements]
     public class FloomResponse
