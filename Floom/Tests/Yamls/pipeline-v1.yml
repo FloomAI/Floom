@@ -1,0 +1,59 @@
+kind: 'floom/pipeline/1.2'
+
+pipeline:
+  name: pipeline-idm-docs1
+
+  model:
+    - package: floom/model/connector/openai
+      model: gpt-3.5
+      api-key: sk-1234567890abcdefg=
+
+  prompt:
+    template:
+      package: floom/prompt/template/default
+      system: "You are a powerful assistant of the BMW, answer questions about BMW, and help users with their issues."
+    
+    context:
+      - package: floom/prompt/context/pdf
+        path: /etc/myfiles/tutorial.pdf
+
+    optimization:
+      - package: floom/prompt/optimization/translation
+        from: en-us
+        to: he-il
+      - package: floom/prompt/optimization/compression
+
+    validation:
+      - package: promptsec/prompt/validation/bad-words-filter
+        language: en-us
+      - package: promptsec/prompt/validation/pii
+        language: en-us
+  
+  response:
+    format:
+      - package: floom/response/formatter
+        type: text
+        language: en
+        max-sentences: 20
+        max-characters: 10000
+
+    validation:
+      - package: promptsec/response/validation/bad-words-filter
+        language: en-us
+      - package: floom/response/validation/sql-validator
+  
+  global:
+    - package: floom/global/conversation-history
+    - package: promptsec/global/ddos-protection
+      throttling:
+        timeframe: min
+        max-hits: 3
+        per: user
+        action: deny
+    - package: floom/global/cost-management
+      alert-threshold: 1000
+      report-frequency: weekly
+    - package: floom/global/cache
+      config:
+      cache-type: memory
+      max-size: 1024MB

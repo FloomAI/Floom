@@ -9,6 +9,10 @@ floom_user_files/
 volumes/
 Floom/volumes/*
 bin/
+obj/
+TestResults/*
+Todos.txt
+
 # Common IntelliJ Platform excludes
 
 # User specific
