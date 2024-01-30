@@ -3,7 +3,7 @@ using Floom.Pipeline;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using DataType = Floom.Pipeline.Entities.DataType;
+using DataType = Floom.Pipeline.Entities.Dtos.DataType;
 
 namespace Floom.Controllers
 {
@@ -23,29 +23,7 @@ namespace Floom.Controllers
             _logger = logger;
             _service = service;
         }
-
-        [HttpGet]
-        [Produces("application/json")]
-        public async Task<ActionResult<IEnumerable<PipelineDtoV1>>> Get()
-        {
-            return Ok(await _service.GetAll());
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<PipelineDtoV1>> GetById(string id)
-        {
-            var pipeline = await _service.GetById(id);
-            return Ok(pipeline);
-        }
-
-        [HttpPost("Apply")]
-        public async Task<IActionResult?> Apply(ApplyPipelineDtoV1 applyPipelineDto)
-        {
-            _logger.LogInformation("Pipelines/Apply Invoked");
-            var result = await _service.Apply(applyPipelineDto);
-            return result;
-        }
-
+        
         [HttpPost("Commit")]
         public async Task<IActionResult?> Commit(PipelineDto pipelineDto)
         {

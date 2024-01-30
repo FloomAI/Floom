@@ -1,4 +1,5 @@
 using Floom.LLMs;
+using Floom.Model;
 using Floom.Pipeline;
 using Floom.Pipeline.Prompt;
 using Floom.Plugin;

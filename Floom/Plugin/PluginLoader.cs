@@ -6,7 +6,6 @@ namespace Floom.Plugin;
 public interface IPluginLoader
 {
     IFloomPlugin? LoadPlugin(string packageName);
-    // void ExecuteEvent(string eventName, PluginContext pluginContext, PipelineContext pipelineContext);
 }
 
 public class PluginLoader : IPluginLoader
@@ -33,19 +32,5 @@ public class PluginLoader : IPluginLoader
         }
 
         return (IFloomPlugin)Activator.CreateInstance(pluginType);
-    }
-    
-    // public IPlugin ExecuteEvent(string eventName, PluginContext pluginContext, PipelineContext pipelineContext)
-    // {
-    //     try
-    //     {
-    //         var plugin = LoadPlugin(pluginContext.Package);
-    //         plugin?.HandleEvent(eventName, pluginContext, pipelineContext);
-    //     }
-    //     catch (Exception e)
-    //     {
-    //         Console.WriteLine(e);
-    //         throw;
-    //     }
-    // }
+    } 
 }

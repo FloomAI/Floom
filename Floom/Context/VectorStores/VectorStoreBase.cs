@@ -1,3 +1,4 @@
+using Floom.Context.VectorStores;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.VectorStores

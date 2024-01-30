@@ -1,4 +1,4 @@
-namespace Floom.VectorStores;
+namespace Floom.Context.VectorStores;
 
 public class VectorStoreConfiguration
 {

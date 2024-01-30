@@ -1,4 +1,5 @@
 using Floom.LLMs;
+using Floom.Model;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 

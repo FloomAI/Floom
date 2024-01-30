@@ -21,8 +21,6 @@ public class RepositoryFactory : IRepositoryFactory
 
     public IRepository<T> Create<T>(string collectionName) where T : DatabaseEntity
     {
-        var logger = _loggerFactory.CreateLogger($"Repository.{typeof(T).Name}");
-
-        return new Repository<T>(_mongoClient, collectionName, logger);
+        return new Repository<T>(_mongoClient, collectionName);
     }
 }
