@@ -8,7 +8,7 @@
 floom_user_files/
 volumes/
 Floom/volumes/*
-
+bin/
 # Common IntelliJ Platform excludes
 
 # User specific
