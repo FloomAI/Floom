@@ -1,15 +1,14 @@
-using Floom.LLMs;
 using Floom.Model;
 using Floom.Plugin;
 
-namespace Floom.Pipeline.Model;
+namespace Floom.Pipeline.StageHandler.Model;
 
 public interface IModelStageHandler : IStageHandler { }
 
 
 public class ModelConnectorResultEvent : PipelineEvent
 {
-    public PromptResponse Response { get; set; }
+    public FloomPromptResponse Response { get; set; }
 }
 
 public class ModelStageHandler : IModelStageHandler
@@ -59,7 +58,7 @@ public class ModelStageHandler : IModelStageHandler
                     {
                         pipelineContext.AddEvent(new ModelConnectorResultEvent
                         {
-                            Response = pluginResult.ResultData as PromptResponse,
+                            Response = pluginResult.ResultData as FloomPromptResponse,
                         });
                     }
                     else

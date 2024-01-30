@@ -7,12 +7,12 @@ public interface IPromptStageHandler : IStageHandler { }
 
 public class PromptTemplateResultEvent : PipelineEvent
 {
-    public PromptRequest? ResultData { get; set; }
+    public FloomPromptRequest? ResultData { get; set; }
 }
 
 public class PromptContextResultEvent : PipelineEvent
 {
-    public PromptRequest? ResultData { get; set; }
+    public FloomPromptRequest? ResultData { get; set; }
 }
 
 public class PromptStageHandler : IPromptStageHandler
@@ -72,7 +72,7 @@ public class PromptStageHandler : IPromptStageHandler
                     pipelineContext.AddEvent(new PromptTemplateResultEvent 
                     { 
                         Timestamp = DateTime.UtcNow,
-                        ResultData = pluginResult.ResultData as PromptRequest,
+                        ResultData = pluginResult.ResultData as FloomPromptRequest,
                     });
                 }
             }
@@ -105,7 +105,7 @@ public class PromptStageHandler : IPromptStageHandler
                         pipelineContext.AddEvent(new PromptContextResultEvent 
                         { 
                             Timestamp = DateTime.UtcNow,
-                            ResultData = pluginResult.ResultData as PromptRequest,
+                            ResultData = pluginResult.ResultData as FloomPromptRequest,
                         });
                     }
                 }

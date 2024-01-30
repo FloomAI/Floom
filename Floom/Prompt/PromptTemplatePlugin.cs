@@ -1,4 +1,3 @@
-using Floom.LLMs;
 using Floom.Model;
 using Floom.Pipeline;
 using Floom.Pipeline.Prompt;
@@ -44,7 +43,7 @@ public class PromptTemplatePlugin: FloomPluginBase
 
         var pluginConfiguration = pluginContext.Configuration;
 
-        var promptRequest = new PromptRequest();
+        var promptRequest = new FloomPromptRequest();
         
         if (_settings.System != null)
         {

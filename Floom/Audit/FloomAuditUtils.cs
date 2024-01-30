@@ -1,6 +1,4 @@
-using Floom.LLMs;
 using Floom.Model;
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 
 namespace Floom.Audit;
@@ -9,8 +7,8 @@ public class FloomAuditUtils
 {
     public static Dictionary<string, object> GetPipelineAttributes(
         FloomRequest floomRequest,
-        PromptRequest promptRequest,
-        PromptResponse promptResponse)
+        FloomPromptRequest promptRequest,
+        FloomPromptResponse promptResponse)
     {
         var attributes = new Dictionary<string, object>();
 
