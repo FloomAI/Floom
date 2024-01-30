@@ -1,10 +1,11 @@
 <div align="center">
 
-<img width="60%" src="/Assets/GitHub-Logo.png" title="Floom - AI Orchestration" />
 
-![25github-text.jpg](/Assets/25github-text.jpg) **Floom** orchestrates and executes Generative AI pipelines, <br/>Empowering **Developers** to <ins>focus on what matters</ins>.
+<img width="60%" src="/ReadmeAssets/GitHub-Logo.png" title="Floom - AI Orchestration" />
+
+![25github-text.jpg](/ReadmeAssets/25github-text.jpg) **Floom** orchestrates and executes Generative AI pipelines, <br/>Empowering **Developers** to <ins>focus on what matters</ins>.
 <br/><br/> ✅ Enterprise-Grade ✅ Production-Ready ✅ Battle-Tested
-<br/> ![25github-text.jpg](/Assets/25github-text.jpg) **Floom** is now Open-Source and **100% FREE** for everyone (including commercial use).
+<br/> ![25github-text.jpg](/ReadmeAssets/25github-text.jpg) **Floom** is now Open-Source and **100% FREE** for everyone (including commercial use).
   
 ![Version](https://img.shields.io/badge/version-1.1.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
@@ -12,19 +13,19 @@
 </div>
 
 <p align="center">
-    <img width="100%" src="/Assets/Define.jpg" title="Define Generative AI Pipelines: Text Completion, Chat, Images, Video, Audio & Speech" />
+    <img width="100%" src="/ReadmeAssets/Define.jpg" title="Define Generative AI Pipelines: Text Completion, Chat, Images, Video, Audio & Speech" />
 </p>
 <p align="center">
-    <img width="100%" src="/Assets/SDK-+-Cost.jpg" title="Integrate quickly with friendly SDKs (Node, Python, .NET, Java, Go & PHP), Cost Management & Protection per product, user, session or context" />
+    <img width="100%" src="/ReadmeAssets/SDK-+-Cost.jpg" title="Integrate quickly with friendly SDKs (Node, Python, .NET, Java, Go & PHP), Cost Management & Protection per product, user, session or context" />
 </p>
 <p align="center">
-    <img width="100%" src="/Assets/Data-+-Updates.jpg" title="Connect to multiple data sources: Files, Databases, APIs with automatic updates & version control" />
+    <img width="100%" src="/ReadmeAssets/Data-+-Updates.jpg" title="Connect to multiple data sources: Files, Databases, APIs with automatic updates & version control" />
 </p>
 <p align="center">
-    <img width="100%" src="/Assets/Caching-Robustness.jpg" title="Caching to reduce model costs and latency, Robustness with automatic failover to other models" />
+    <img width="100%" src="/ReadmeAssets/Caching-Robustness.jpg" title="Caching to reduce model costs and latency, Robustness with automatic failover to other models" />
 </p>
 <p align="center">
-    <img width="100%" src="/Assets/Security-+-Safety.jpg" title="Security with DLP (Data Leakage Prevention), Token-Abuse, API-Abuse, Data-Exfiltration, Prompt Injection Protection, Safety with guardrails, filter curse words, illegal materials etc" />
+    <img width="100%" src="/ReadmeAssets/Security-+-Safety.jpg" title="Security with DLP (Data Leakage Prevention), Token-Abuse, API-Abuse, Data-Exfiltration, Prompt Injection Protection, Safety with guardrails, filter curse words, illegal materials etc" />
 </p>
 
 ------
@@ -32,20 +33,20 @@
 ------
 **"AI Pipeline" is the definition of the entire GenAI integration & execution process.** In order to properly execute a production-grade, cost-effective Generative AI integration, organizations need to: design a prompt, inject dynamic variables, link data, augment with RAG, compress, execute, format I/O, optimize, cache, re-execute, validate, safeguard, monitor, log, manage costs & much more. 
 <br/><br/>This is Floom's **AI Pipeline** model:
-![PipelineDefintion.jpg](/Assets/PipelineDefintion.jpg)
+![PipelineDefintion.jpg](/ReadmeAssets/PipelineDefintion.jpg)
 
 ------
-### **![25github-text.jpg](/Assets/25github-text.jpg) Floom handles most of this hassle for you. This is ![25github-text.jpg](/Assets/25github-text.jpg) Floom's magic.**
+### **![25github-text.jpg](/ReadmeAssets/25github-text.jpg) Floom handles most of this hassle for you. This is ![25github-text.jpg](/ReadmeAssets/25github-text.jpg) Floom's magic.**
 
-![Flow.jpg](/Assets/Flow.jpg)
+![Flow.jpg](/ReadmeAssets/Flow.jpg)
 ------
 
-### Launch &nbsp; ![25github-text.jpg](/Assets/25github-text.jpg) **Floom**
-1. Download &nbsp; ![25github-text.jpg](/Assets/25github-text.jpg) **Floom**'s 'Docker-Compose' file
+### Launch &nbsp; ![25github-text.jpg](/ReadmeAssets/25github-text.jpg) **Floom**
+1. Download &nbsp; ![25github-text.jpg](/ReadmeAssets/25github-text.jpg) **Floom**'s 'Docker-Compose' file
 ```
 curl -O https://github.com/FloomAI/Floom/blob/master/docker-compose.yml
 ```
-2. Run &nbsp; ![25github-text.jpg](/Assets/25github-text.jpg) **Floom**
+2. Run &nbsp; ![25github-text.jpg](/ReadmeAssets/25github-text.jpg) **Floom**
 ```
 docker compose up -d
 ```
