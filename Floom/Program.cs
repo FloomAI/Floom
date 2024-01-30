@@ -6,18 +6,17 @@ using Floom.Data;
 using Floom.Embeddings.Ollama;
 using Floom.Embeddings.OpenAi;
 using Floom.Events;
-using Floom.LLMs.LLama;
-using Floom.LLMs.Ollama;
 using Floom.Logs;
 using Floom.Misc;
+using Floom.Model.LLama;
+using Floom.Model.LLamaCpp;
 using Floom.Model.OpenAi;
 using Floom.Pipeline;
-using Floom.Pipeline.Model;
 using Floom.Pipeline.Prompt;
+using Floom.Pipeline.StageHandler.Model;
 using Floom.Plugin;
 using Floom.Repository;
 using Floom.Utils;
-using Floom.Vendors;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
@@ -137,10 +136,7 @@ builder.Services.AddSingleton<FloomAuditService>();
 
 builder.Services.AddTransient<IRepositoryFactory, RepositoryFactory>();
 
-builder.Services.AddScoped<OpenAiClient>();
-builder.Services.AddScoped<OllamaLLM>();
-builder.Services.AddScoped<OllamaClient>();
-builder.Services.AddScoped<LLamaLLM>();
+builder.Services.AddScoped<LLamaCppClient>();
 
 // Embeddings Factory
 builder.Services.AddScoped<OpenAiEmbeddings>();

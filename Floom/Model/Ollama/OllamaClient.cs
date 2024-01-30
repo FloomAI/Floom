@@ -5,16 +5,11 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Floom.Embeddings.Ollama;
-using Floom.Embeddings.OpenAi;
-using Floom.LLMs;
 using Floom.Logs;
-using Floom.Model;
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
-using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Floom.Vendors;
+namespace Floom.Model.Ollama;
 
 public class OllamaGenerateTextRequestMessage
 {
@@ -30,7 +25,7 @@ public class OllamaGenerateTextResponseMessage
     public string? response { get; set; }
 }
 
-public class OllamaClient
+public class OllamaClient : IModelConnectorClient
 {
     private readonly ILogger _logger;
     private const string MainUrl = "http://127.0.0.1:11434/api/";
@@ -40,9 +35,9 @@ public class OllamaClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
     
-    public async Task<PromptResponse> GenerateTextAsync(PromptRequest prompt, string model)
+    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest prompt, string model)
     {
-        var promptResponse = new PromptResponse();
+        var promptResponse = new FloomPromptResponse();
 
         var swPrompt = new Stopwatch();
         swPrompt.Start();
@@ -79,7 +74,7 @@ public class OllamaClient
             }
 
             //Add all messages
-            foreach (PromptMessage promptMessage in prompt.previousMessages)
+            foreach (FloomPromptMessage promptMessage in prompt.previousMessages)
             {
                 generateTextRequestMessage.prompt += promptMessage.content + "\n";
             }
@@ -108,7 +103,7 @@ public class OllamaClient
             }
 
             //Fill Response
-            promptResponse = new PromptResponse()
+            promptResponse = new FloomPromptResponse()
             {
                 elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
             };

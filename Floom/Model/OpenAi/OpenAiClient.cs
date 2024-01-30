@@ -6,13 +6,12 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Floom.Embeddings.OpenAi;
 using Floom.Logs;
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Model.OpenAi;
 
-public class OpenAiClient
+public class OpenAiClient : IModelConnectorClient
 {
     private ILogger _logger;
     readonly string MainUrl = "https://api.openai.com/v1/";
@@ -23,9 +22,9 @@ public class OpenAiClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
     
-    public async Task<PromptResponse> GenerateTextAsync(PromptRequest prompt, string model)
+    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest prompt, string model)
     {
-        PromptResponse promptResponse = new PromptResponse();
+        FloomPromptResponse promptResponse = new FloomPromptResponse();
 
         Stopwatch swPrompt = new Stopwatch();
         swPrompt.Start();
@@ -48,7 +47,7 @@ public class OpenAiClient
             //Add History (System+User+Assistant)
 
             //Add all messages
-            foreach (PromptMessage promptMessage in prompt.previousMessages)
+            foreach (FloomPromptMessage promptMessage in prompt.previousMessages)
             {
                 generateTextRequestMessage.messages.Add(new Message()
                 {
@@ -100,10 +99,10 @@ public class OpenAiClient
             }
 
             //Fill Response
-            promptResponse = new PromptResponse()
+            promptResponse = new FloomPromptResponse()
             {
                 elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
-                tokenUsage = new PromptTokenUsage()
+                tokenUsage = new FloomPromptTokenUsage()
                 {
                     processingTokens = chatResponse.usage.completion_tokens,
                     promptTokens = chatResponse.usage.prompt_tokens,
@@ -220,9 +219,9 @@ public class OpenAiClient
         return pagesEmbeddings;
     }
 
-    public async Task<PromptResponse> GenerateImageAsync(PromptRequest prompt, string model)
+    public async Task<FloomPromptResponse> GenerateImageAsync(FloomPromptRequest prompt, string model)
     {
-        PromptResponse promptResponse = new PromptResponse();
+        FloomPromptResponse promptResponse = new FloomPromptResponse();
 
         Stopwatch swPrompt = new Stopwatch();
         swPrompt.Start();

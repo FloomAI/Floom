@@ -1,20 +1,14 @@
 using System.Diagnostics;
 using System.Text;
-using Floom.Model;
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
-using Microsoft.AspNetCore.Mvc;
-using LLama.Common;
 using LLama;
+using LLama.Common;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Floom.LLMs.LLama;
+namespace Floom.Model.LLamaCpp;
 
-public class LLamaLLM
+public class LLamaCppClient : IModelConnectorClient
 {
-    public void SetApiKey(string apiKey)
-    {
-    }
-
     // {  tinyllama 0.3
     //     "pipelineId": "lama-pipeline",
     //     "input": "<|im_start|>system You are a software engineer assistant, provide clear python code.<|im_end|><|im_start|>user Write python function to calculate Fibonacci numbers? Include only function code<|im_end|><|im_start|>"
@@ -39,9 +33,9 @@ public class LLamaLLM
 
     // ORCA MINI
     // ### System:\n \n\n### User:\n  Write a python code to calculate Fibonacci numbers\n\n### Response:\n 
-    public async Task<PromptResponse> GenerateTextAsync(PromptRequest promptRequest, string modelName)
+    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string modelName)
     {
-        var promptResponse = new PromptResponse();
+        var promptResponse = new FloomPromptResponse();
         var swPrompt = new Stopwatch();
         swPrompt.Start();
 
@@ -81,7 +75,7 @@ public class LLamaLLM
             Console.Write(text);
         }
 
-        promptResponse = new PromptResponse()
+        promptResponse = new FloomPromptResponse()
         {
             elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
         };

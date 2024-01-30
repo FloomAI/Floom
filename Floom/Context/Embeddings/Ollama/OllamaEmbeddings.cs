@@ -1,6 +1,6 @@
 using Floom.Logs;
+using Floom.Model.Ollama;
 using Floom.Utils;
-using Floom.Vendors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Embeddings.Ollama;

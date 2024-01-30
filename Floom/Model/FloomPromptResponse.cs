@@ -3,15 +3,15 @@ using Floom.Pipeline.Entities.Dtos;
 
 namespace Floom.Model;
 
-public class PromptResponse
+public class FloomPromptResponse
 {
     public List<ResponseValue> values { get; set; } = new List<ResponseValue>();
     public long elapsedProcessingTime { get; set; }
-    public PromptTokenUsage tokenUsage { get; set; }
-    public PromptTokenUsage cost { get; set; }
+    public FloomPromptTokenUsage tokenUsage { get; set; }
+    public FloomPromptTokenUsage cost { get; set; }
 }
 
-public class PromptTokenUsage
+public class FloomPromptTokenUsage
 {
     public int processingTokens { get; set; }
     public int promptTokens { get; set; }
@@ -25,11 +25,5 @@ public class PromptTokenUsage
             totalTokens = totalTokens,
             processingTokens = processingTokens,
         };
-    }
-
-    public class PromptCost
-    {
-        public string currency { get; set; }
-        public decimal value { get; set; }
     }
 }

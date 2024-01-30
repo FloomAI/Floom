@@ -1,7 +1,7 @@
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
-using Floom.Pipeline.Model;
 using Floom.Pipeline.Prompt;
+using Floom.Pipeline.StageHandler.Model;
 using Floom.Repository;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;

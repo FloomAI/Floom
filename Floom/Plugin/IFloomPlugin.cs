@@ -9,7 +9,6 @@ public class PluginResult
     public object? ResultData { get; set; }
 }
 
-
 public interface IFloomPlugin
 {
     void Initialize(PluginContext configuration);
