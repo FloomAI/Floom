@@ -10,6 +10,7 @@ volumes/
 Floom/volumes/*
 bin/
 obj/
+Floom/LocalModels/*
 TestResults/*
 Todos.txt
 
