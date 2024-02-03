@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Floom", "Floom\Floom.csproj", "{988D2C36-3F55-478F-8911-29112D8D9EDF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Floom.Core", "Floom.Core\Floom.Core.csproj", "{988D2C36-3F55-478F-8911-29112D8D9EDF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Floom.Tests", "Floom.Tests\Floom.Tests.csproj", "{1CE1C2AD-E982-4C91-96E8-E1337E928A2A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Floom.Plugins", "Floom.Plugins\Floom.Plugins.csproj", "{5EB558DD-208B-4C7D-85FA-EB2B086D9B8C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{1CE1C2AD-E982-4C91-96E8-E1337E928A2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1CE1C2AD-E982-4C91-96E8-E1337E928A2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1CE1C2AD-E982-4C91-96E8-E1337E928A2A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EB558DD-208B-4C7D-85FA-EB2B086D9B8C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EB558DD-208B-4C7D-85FA-EB2B086D9B8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EB558DD-208B-4C7D-85FA-EB2B086D9B8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EB558DD-208B-4C7D-85FA-EB2B086D9B8C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
