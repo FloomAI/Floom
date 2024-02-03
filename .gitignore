@@ -6,11 +6,10 @@
 #
 .idea/
 floom_user_files/
-volumes/
-Floom/volumes/*
+docker_volumes/
 bin/
 obj/
-Floom/LocalModels/*
+Floom.Core/LocalModels/*
 TestResults/*
 Todos.txt
 

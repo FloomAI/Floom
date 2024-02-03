@@ -18,7 +18,7 @@
         <PackageReference Include="MSTest.TestAdapter" Version="3.1.1"/>
         <PackageReference Include="MSTest.TestFramework" Version="3.1.1"/>
         <PackageReference Include="coverlet.collector" Version="3.2.0"/>
-        <ProjectReference Include="..\Floom\Floom.csproj"/>
+        <ProjectReference Include="..\Floom.Core\Floom.Core.csproj" />
     </ItemGroup>
 
 </Project>
