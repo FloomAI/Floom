@@ -7,7 +7,6 @@ using Floom.Embeddings.Ollama;
 using Floom.Embeddings.OpenAi;
 using Floom.Events;
 using Floom.Logs;
-using Floom.Misc;
 using Floom.Model.LLama;
 using Floom.Model.LLamaCpp;
 using Floom.Model.OpenAi;

@@ -77,6 +77,19 @@ public class PromptStageHandler : IPromptStageHandler
                 }
             }
         }
+        else
+        {
+            _logger.LogInformation("Prompt Stage: No prompt template found.");
+            // Emit an empty FloomPromptRequest
+            pipelineContext.AddEvent(new PromptTemplateResultEvent 
+            { 
+                Timestamp = DateTime.UtcNow,
+                ResultData = new FloomPromptRequest()
+                {
+                    user = pipelineContext.Request.input,
+                },
+            });
+        }
     }
 
     private async Task HandleContextAsync(PipelineContext pipelineContext)
