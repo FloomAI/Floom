@@ -4,7 +4,6 @@ using Floom.Context.VectorStores;
 using Floom.Data;
 using Floom.Embeddings;
 using Floom.Entities.AuditRow;
-using Floom.Misc;
 using Floom.Pipeline;
 using Floom.Pipeline.Prompt;
 using Floom.Plugin;

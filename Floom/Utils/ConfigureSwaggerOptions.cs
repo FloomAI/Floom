@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Floom.Misc
+namespace Floom.Utils
 {
     public class ConfigureSwaggerOptions
         : IConfigureNamedOptions<SwaggerGenOptions>
