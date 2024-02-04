@@ -110,6 +110,174 @@
   owner:
     name: floom
 
+- name: Docx Retriever
+  runtime: csharp
+  description: Retrieves context from DOCX documents
+  package: floom/prompt/context/docx
+  version: '0.1'
+  supportedFloomVersions:
+    - '1.0'
+  supportedStages:
+    - prompt.context
+  events:
+    - OnPipelineCommit
+  parameters:
+    path:
+      type: string
+      description: Path to the Docx document
+    assetId:
+      type: string
+      description: Floom Asset ID of the Docx document
+    vectorStore:
+      type: dictionary
+      description: Vector store to store the Docx context
+      default:
+        vendor: "Milvus"
+        endpoint: "localhost"
+        port: "19530"
+        username: "root"
+        password: "Milvus"
+      keys:
+        vendor:
+          type: string
+          description: Vector store vendor
+        endpoint:
+          type: string
+          description: Vector store endpoint (including port)
+        username:
+          type: string
+          description: Key of the vector store
+        password:
+          type: string
+          description: Key of the vector store
+    embeddings:
+      type: dictionary
+      description: Embeddings to use for the Docx context
+      default:
+        vendor: "openai"
+        model: "text-embedding-ada-002"
+      keys:
+        vendor:
+          type: string
+          description: Embeddings vendor
+        model:
+          type: string
+          description: Embeddings model
+  owner:
+    name: floom
+
+- name: PPTX Retriever
+  runtime: csharp
+  description: Retrieves context from PPTX documents
+  package: floom/prompt/context/pptx
+  version: '0.1'
+  supportedFloomVersions:
+    - '1.0'
+  supportedStages:
+    - prompt.context
+  events:
+    - OnPipelineCommit
+  parameters:
+    path:
+      type: string
+      description: Path to the PPTX document
+    assetId:
+      type: string
+      description: Floom Asset ID of the PPTX document
+    vectorStore:
+      type: dictionary
+      description: Vector store to store the PPTX context
+      default:
+        vendor: "Milvus"
+        endpoint: "localhost"
+        port: "19530"
+        username: "root"
+        password: "Milvus"
+      keys:
+        vendor:
+          type: string
+          description: Vector store vendor
+        endpoint:
+          type: string
+          description: Vector store endpoint (including port)
+        username:
+          type: string
+          description: Key of the vector store
+        password:
+          type: string
+          description: Key of the vector store
+    embeddings:
+      type: dictionary
+      description: Embeddings to use for the PPTX context
+      default:
+        vendor: "openai"
+        model: "text-embedding-ada-002"
+      keys:
+        vendor:
+          type: string
+          description: Embeddings vendor
+        model:
+          type: string
+          description: Embeddings model
+  owner:
+    name: floom
+
+- name: TXT Retriever
+  runtime: csharp
+  description: Retrieves context from TXT documents
+  package: floom/prompt/context/txt
+  version: '0.1'
+  supportedFloomVersions:
+    - '1.0'
+  supportedStages:
+    - prompt.context
+  events:
+    - OnPipelineCommit
+  parameters:
+    path:
+      type: string
+      description: Path to the TXT document
+    assetId:
+      type: string
+      description: Floom Asset ID of the TXT document
+    vectorStore:
+      type: dictionary
+      description: Vector store to store the TXT context
+      default:
+        vendor: "Milvus"
+        endpoint: "localhost"
+        port: "19530"
+        username: "root"
+        password: "Milvus"
+      keys:
+        vendor:
+          type: string
+          description: Vector store vendor
+        endpoint:
+          type: string
+          description: Vector store endpoint (including port)
+        username:
+          type: string
+          description: Key of the vector store
+        password:
+          type: string
+          description: Key of the vector store
+    embeddings:
+      type: dictionary
+      description: Embeddings to use for the TXT context
+      default:
+        vendor: "openai"
+        model: "text-embedding-ada-002"
+      keys:
+        vendor:
+          type: string
+          description: Embeddings vendor
+        model:
+          type: string
+          description: Embeddings model
+  owner:
+    name: floom
+    
 - name: Response Formatter
   runtime: csharp
   description: Formats the AI response
