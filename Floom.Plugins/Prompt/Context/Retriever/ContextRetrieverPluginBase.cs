@@ -20,8 +20,9 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
     public ContextRetrieverPluginBase()
     {
     }
-
-    public abstract string GetDocumentType();
+    
+    public abstract Task<List<string>> ParseFile(byte[] fileBytes,
+        ExtractionMethod extractionMethod, int? maxCharactersPerItem);
     
     public override void Initialize(PluginContext context)
     {
@@ -194,27 +195,11 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
         _logger.LogInformation($"Parsing file {floomAsset.StoredPath}");
         
-        var documentManager = new DocumentManager();
-
         ExtractionMethod extractionMethod = ExtractionMethod.ByPages;
-        // switch (dataModel.split)
-        // {
-            // case SplitType.Pages:
-            //     extractionMethod = ExtractionMethod.ByPages;
-            //     break;
-            // case SplitType.Paragraphs:
-            //     extractionMethod = ExtractionMethod.ByParagraphs;
-            //     break;
-            // case SplitType.Pages:
-            //     extractionMethod = ExtractionMethod.ByTOC;
-            //     break;
-        // }
-
+        
         _logger.LogInformation($"Extracting text from file {floomAsset.StoredPath}");
         
-        splitText = await documentManager.ExtractTextAsync(GetDocumentType(), fileBytes,
-            extractionMethod,
-            maxCharactersPerItem: null);
+        splitText = await ParseFile(fileBytes, extractionMethod, maxCharactersPerItem: null);
 
         #endregion
 
