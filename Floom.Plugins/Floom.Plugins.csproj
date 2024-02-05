@@ -14,6 +14,10 @@
       <ProjectReference Include="..\Floom.Core\Floom.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="DocumentFormat.OpenXml" Version="3.0.1" />
+    </ItemGroup>
+
     <Target Name="PostBuild" AfterTargets="Build">
         <!-- Ensure the Plugins directory exists -->
         <Exec Command="mkdir -p &quot;$(SolutionDir)Floom.Core/bin/$(Configuration)/net7.0/Plugins&quot;" />
