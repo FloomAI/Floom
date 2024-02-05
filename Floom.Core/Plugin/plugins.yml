@@ -8,7 +8,6 @@
   supportedStages:
     - model.connector
   events:
-    - OnPipelineCommit
   parameters:
     model:
       type: string
@@ -17,6 +16,10 @@
     apiKey:
       type: string
       description: OpenAI Api Key
+    voice:
+      type: string
+      description: Voice to use for the Text to speech response
+      default: "alloy"
   owner:
     name: floom
 

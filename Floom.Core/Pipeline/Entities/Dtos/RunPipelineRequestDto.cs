@@ -7,6 +7,7 @@ public class FloomRequest
     public string? input { get; set; } = ""; //User Input
     public Dictionary<string, string>? variables { get; set; } //Vars
     public DataTransferType dataTransfer { get; set; }
+    public IFormFile? file { get; set; }
 }
 
 public enum DataTransferType

@@ -27,12 +27,22 @@ public class OpenAiModelConnectorPlugin : ModelConnectorPluginBase<OpenAiClient>
         
         if (responseType == "text")
         {
+            if(_settings.Model.Contains("whisper"))
+            {
+                return _client.GenerateSpeechToTextAsync(promptRequest.file, _settings.Model).Result;
+            }
+
             return _client.GenerateTextAsync(promptRequest, _settings.Model).Result;
         }
 
         if(responseType == "image")
         {
             return _client.GenerateImageAsync(promptRequest, _settings.Model).Result;
+        }
+        
+        if(responseType == "audio")
+        {
+            return _client.GenerateTextToSpeechAsync(promptRequest, _settings.Model, _settings.Voice).Result;
         }
         
         _logger.LogError($"Invalid response type: {responseType}");

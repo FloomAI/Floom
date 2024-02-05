@@ -4,6 +4,7 @@ public class FloomPromptRequest
 {
     public string? system { get; set; }
     public string? user { get; set; }
+    public byte[]? file { get; set; }
     public List<FloomPromptMessage> previousMessages { get; set; } = new List<FloomPromptMessage>();
 
     //Image

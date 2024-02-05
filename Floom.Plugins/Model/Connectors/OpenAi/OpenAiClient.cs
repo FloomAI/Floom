@@ -37,7 +37,7 @@ public class OpenAiClient : IModelConnectorClient
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             // Create the request message
-            GenerateTextRequestMessage generateTextRequestMessage = new GenerateTextRequestMessage
+            GenerateTextRequestBody generateTextRequestBody = new GenerateTextRequestBody
             {
                 model = model,
                 messages = new List<Message>(),
@@ -51,7 +51,7 @@ public class OpenAiClient : IModelConnectorClient
             //Add all messages
             foreach (FloomPromptMessage promptMessage in prompt.previousMessages)
             {
-                generateTextRequestMessage.messages.Add(new Message()
+                generateTextRequestBody.messages.Add(new Message()
                 {
                     role = promptMessage.role,
                     content = promptMessage.content
@@ -64,7 +64,7 @@ public class OpenAiClient : IModelConnectorClient
                 //take system from prompt
                 if (prompt.system != null)
                 {
-                    generateTextRequestMessage.messages.Add(new Message()
+                    generateTextRequestBody.messages.Add(new Message()
                     {
                         role = "system",
                         content = prompt.system
@@ -76,14 +76,14 @@ public class OpenAiClient : IModelConnectorClient
             //Add User
             if (prompt.user != null)
             {
-                generateTextRequestMessage.messages.Add(new Message()
+                generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "user",
                     content = prompt.user
                 });
             }
 
-            string requestBody = JsonSerializer.Serialize(generateTextRequestMessage);
+            string requestBody = JsonSerializer.Serialize(generateTextRequestBody);
             StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
             // Call the API and get the response
@@ -92,8 +92,8 @@ public class OpenAiClient : IModelConnectorClient
             response.EnsureSuccessStatusCode();
 
             string responseContent = await response.Content.ReadAsStringAsync();
-            GenerateTextResponseMessage? chatResponse =
-                JsonSerializer.Deserialize<GenerateTextResponseMessage>(responseContent);
+            GenerateTextResponseBody? chatResponse =
+                JsonSerializer.Deserialize<GenerateTextResponseBody>(responseContent);
 
             if (chatResponse == null)
             {
@@ -129,7 +129,6 @@ public class OpenAiClient : IModelConnectorClient
 
         return promptResponse;
     }
-
 
     public async Task<IActionResult> ValidateModelAsync(string model)
     {
@@ -234,7 +233,7 @@ public class OpenAiClient : IModelConnectorClient
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             //Create the request message
-            GenerateImageRequestMessage request = new GenerateImageRequestMessage
+            GenerateImageRequestBody request = new GenerateImageRequestBody
             {
                 prompt = prompt.user,
                 size = "1024x1024",
@@ -249,8 +248,8 @@ public class OpenAiClient : IModelConnectorClient
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}images/generations", content);
 
             string responseContent = await response.Content.ReadAsStringAsync();
-            GenerateImageResponseMessage? generateResponse =
-                JsonSerializer.Deserialize<GenerateImageResponseMessage>(responseContent);
+            GenerateImageResponseBody? generateResponse =
+                JsonSerializer.Deserialize<GenerateImageResponseBody>(responseContent);
 
             //Detect if b64_json OR url
             //If URL, download
@@ -308,9 +307,116 @@ public class OpenAiClient : IModelConnectorClient
 
         return promptResponse;
     }
+    
+    public async Task<FloomPromptResponse> GenerateTextToSpeechAsync(FloomPromptRequest prompt, string model, string voice)
+    {
+        FloomPromptResponse promptResponse = new FloomPromptResponse();
+
+        Stopwatch swPrompt = new Stopwatch();
+        swPrompt.Start();
+
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            // Create the request message
+            GenerateTextToSpeechRequestBody generateTextToSpeechRequestBody = new GenerateTextToSpeechRequestBody
+            {
+                model = model,
+                voice = voice,
+                input = prompt.user ?? string.Empty
+            };
+            
+
+            string requestBody = JsonSerializer.Serialize(generateTextToSpeechRequestBody);
+            StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+            // Call the API and get the response
+            _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}audio/speech");
+            HttpResponseMessage response = await client.PostAsync($"{MainUrl}audio/speech", content);
+
+            response.EnsureSuccessStatusCode();
+
+            // Handling binary data
+            var responseBytes = await response.Content.ReadAsByteArrayAsync();
+
+            // For example, converting to Base64 if you need to handle it as a string.
+            var base64Audio = Convert.ToBase64String(responseBytes);
+
+            promptResponse = new FloomPromptResponse()
+            {
+                elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
+                values = new List<ResponseValue>
+                {
+                    new()
+                    {
+                        type = DataType.Audio,
+                        b64 = base64Audio
+                    }
+                }
+            };
+        }
+        swPrompt.Stop();
+
+        return promptResponse;
+    }
+    
+    
+    public async Task<FloomPromptResponse> GenerateSpeechToTextAsync(byte[] audioBytes, string model)
+    {
+        FloomPromptResponse promptResponse = new FloomPromptResponse();
+        Stopwatch swPrompt = new Stopwatch();
+        swPrompt.Start();
+
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
+        
+            using (var content = new MultipartFormDataContent())
+            {
+                // Add the audio file
+                var audioContent = new ByteArrayContent(audioBytes);
+                audioContent.Headers.ContentType = new MediaTypeHeaderValue("audio/mp3");
+                content.Add(audioContent, "file", "audio.mp3");
+            
+                // Add the model field
+                content.Add(new StringContent(model), "model");
+
+                // Log the request (ensure your logger is configured to handle this appropriately)
+                _logger.LogInformation("Calling OpenAI API for speech-to-text with model {0}", model);
+
+                // Call the API and get the response
+                var response = await client.PostAsync($"{MainUrl}audio/transcriptions", content);
+                response.EnsureSuccessStatusCode();
+
+                // Assuming the response is JSON (adjust accordingly)
+                var responseString = await response.Content.ReadAsStringAsync();
+                var transcriptionResponse = JsonSerializer.Deserialize<GenerateSpeechResponseBody>(responseString);
+
+                //Fill Response
+                promptResponse = new FloomPromptResponse()
+                {
+                    elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
+                };
+
+                promptResponse.values.Add(
+                    new ResponseValue()
+                    {
+                        type = DataType.String,
+                        value = transcriptionResponse.text
+                    }
+                );
+            }
+        }
+
+        swPrompt.Stop();
+        return promptResponse;
+    }
+
 }
 
-public class GenerateImageRequestMessage
+public class GenerateImageRequestBody
 {
     public string? prompt { get; set; }
     public string? size { get; set; }
@@ -319,11 +425,25 @@ public class GenerateImageRequestMessage
     public string response_format { get; set; } = "b64_json";
 }
 
-public class GenerateTextRequestMessage
+public class GenerateTextRequestBody
 {
     public string model { get; set; }
     public List<Message> messages { get; set; }
     public double temperature { get; set; }
+}
+
+public class GenerateTextToSpeechRequestBody
+{
+    public string model { get; set; }
+    public string input { get; set; }
+    public string voice { get; set; }
+}
+
+public class GenerateTextToSpeechResponseBody
+{
+    public string model { get; set; }
+    public string input { get; set; }
+    public string voice { get; set; }
 }
 
 public class Message
@@ -332,7 +452,7 @@ public class Message
     public string? content { get; set; }
 }
 
-public class GenerateTextResponseMessage
+public class GenerateTextResponseBody
 {
     public string? id { get; set; }
 
@@ -345,10 +465,15 @@ public class GenerateTextResponseMessage
 }
 
 
-public class GenerateImageResponseMessage
+public class GenerateImageResponseBody
 {
     public long created { get; set; }
     public List<ImageData>? data { get; set; }
+}
+
+public class GenerateSpeechResponseBody
+{
+    public string text { get; set; }
 }
 
 public class ImageData

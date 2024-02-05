@@ -1,9 +1,9 @@
 using Floom.Model;
-using Floom.Plugin;
 using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
+using Floom.Utils;
 
-namespace Floom.Pipeline.Prompt;
+namespace Floom.Pipeline.StageHandler.Prompt;
 
 public interface IPromptStageHandler : IStageHandler { }
 
@@ -59,7 +59,7 @@ public class PromptStageHandler : IPromptStageHandler
             _logger.LogInformation("Prompt Stage: Handling prompt template.");
             
             var templatePlugin = PluginLoader.LoadPlugin(promptTemplateConfiguration.Package);
-    
+
             if (templatePlugin != null)
             {
                 var pluginContext = await PluginContextCreator.Create(promptTemplateConfiguration);
@@ -91,6 +91,12 @@ public class PromptStageHandler : IPromptStageHandler
                     user = pipelineContext.Request.input,
                 },
             });
+        }
+
+        if (pipelineContext.Request.file != null)
+        {
+            var promptTemplateResultEvents = pipelineContext.GetEvents().OfType<PromptTemplateResultEvent>();
+            promptTemplateResultEvents.ToList().ForEach(e => e.ResultData.file = FileUtils.ConvertIFormFileToByteArrayAsync(pipelineContext.Request.file).Result );
         }
     }
 

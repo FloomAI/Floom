@@ -102,7 +102,7 @@ public class EventsManager
             _updateSemaphore.Release();
         }
         
-        ProcessEvent(Event.OnFloomStart);
+        await ProcessEvent(Event.OnFloomStart);
     }
     
     public async Task OnPipelineCommit(PipelineEntity updatedPipeline)
@@ -124,7 +124,7 @@ public class EventsManager
             _updateSemaphore.Release();
         }
         
-        ProcessEvent(Event.OnPipelineCommit);
+        await ProcessEvent(Event.OnPipelineCommit, updatedPipeline.name);
     }
     
     private async Task<List<EventSubscriber>> GetEventSubscribers(string eventName)
@@ -146,7 +146,7 @@ public class EventsManager
         }
     }
 
-    private async Task ProcessEvent(string eventName)
+    private async Task ProcessEvent(string eventName, string pipelineName = "")
     {
         var subscribers = GetEventSubscribers(eventName).Result;
 
@@ -155,6 +155,8 @@ public class EventsManager
             switch (eventSubscriber.EntityType)
             {
                 case EventSubscriberType.Plugin:
+                    // in case pipelineName is provided, only process the event if the pipelineName matches
+                    if(pipelineName != "" && eventSubscriber.PipelineName != pipelineName) continue;
                     var pipeline = await _pipelinesRepository.Get(eventSubscriber.PipelineName, "name");
                     var pluginPackage = eventSubscriber.EntityId;
                     var pluginConfiguration = PipelineHelper.GetPluginConfigurationInPipeline(pluginPackage, pipeline);

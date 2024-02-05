@@ -1,6 +1,6 @@
 using Floom.Model;
 using Floom.Pipeline;
-using Floom.Pipeline.Prompt;
+using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Floom.Utils;
@@ -42,9 +42,7 @@ public class PromptTemplatePlugin: FloomPluginBase
     public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
     {
         _logger.LogInformation($"Executing {GetType()}: {pluginContext.Package}");
-
-        var pluginConfiguration = pluginContext.Configuration;
-
+        
         var promptRequest = new FloomPromptRequest();
         
         if (_settings.System != null)
