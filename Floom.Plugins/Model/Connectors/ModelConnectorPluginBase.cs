@@ -23,10 +23,8 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
 
     protected abstract void InitializeClient(ModelConnectorPluginConfig settings);
 
-    public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
+    protected FloomPromptRequest? FinalizePromptRequest(PipelineContext pipelineContext)
     {
-        _logger.LogInformation($"Executing {GetType()}: {pluginContext.Package}");
-
         var promptTemplateResultEvent = pipelineContext.GetEvents()
             .OfType<PromptTemplateResultEvent>()
             .FirstOrDefault()
@@ -37,12 +35,24 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
             .FirstOrDefault()
             ?.ResultData;
 
-        // Determine the final promptRequest based on the available events
-        var promptRequest = promptContextResultEvent ?? promptTemplateResultEvent;
+        return promptContextResultEvent ?? promptTemplateResultEvent;
+    }
+    
+    protected virtual FloomPromptResponse ProcessPromptRequest(PipelineContext pipelineContext, FloomPromptRequest promptRequest)
+    {
+        return _client.GenerateTextAsync(promptRequest, _settings.Model).Result;
+    }
+    
+    public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
+    {
+        _logger.LogInformation($"Executing {GetType()}: {pluginContext.Package}");
 
-        if (_settings.Model != null)
+        // Determine the final promptRequest based on the available events
+        var promptRequest = FinalizePromptRequest(pipelineContext);
+
+        if (_settings.Model != null && promptRequest != null)
         {
-            var response = await _client.GenerateTextAsync(promptRequest, _settings.Model);
+            var response = ProcessPromptRequest(pipelineContext, promptRequest);
 
             _logger.LogInformation($"{GetType()} Completed Successfully");
 
@@ -52,9 +62,13 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
                 ResultData = response
             };
         }
-
-        _logger.LogInformation($"{GetType()} Completed With Errors");
-
+        
+        if(_settings.Model == null)
+            _logger.LogError($"{GetType()} Model is not set");
+        
+        if(promptRequest == null)
+            _logger.LogError($"{GetType()} PromptRequest is not set");
+        
         return new PluginResult()
         {
             Success = false

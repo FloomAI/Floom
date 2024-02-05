@@ -237,8 +237,8 @@ public class OpenAiClient : IModelConnectorClient
             GenerateImageRequestMessage request = new GenerateImageRequestMessage
             {
                 prompt = prompt.user,
-                size = prompt.resolution,
-                n = prompt.options,
+                size = "1024x1024",
+                n = 1,
                 response_format = "url"
             };
 
@@ -247,7 +247,6 @@ public class OpenAiClient : IModelConnectorClient
 
             //Call the API and get the response
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}images/generations", content);
-            response.EnsureSuccessStatusCode();
 
             string responseContent = await response.Content.ReadAsStringAsync();
             GenerateImageResponseMessage? generateResponse =
