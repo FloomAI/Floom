@@ -2,7 +2,7 @@ using Floom.Audit;
 using Floom.Data;
 using Floom.Entities.AuditRow;
 using Floom.Pipeline;
-using Floom.Pipeline.Prompt;
+using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Floom.Plugins.Prompt.Context.Embeddings;

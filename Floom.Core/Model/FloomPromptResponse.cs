@@ -1,11 +1,10 @@
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 
 namespace Floom.Model;
 
 public class FloomPromptResponse
 {
-    public List<ResponseValue> values { get; set; } = new List<ResponseValue>();
+    public List<ResponseValue> values { get; set; } = new();
     public long elapsedProcessingTime { get; set; }
     public FloomPromptTokenUsage tokenUsage { get; set; }
     public FloomPromptTokenUsage cost { get; set; }

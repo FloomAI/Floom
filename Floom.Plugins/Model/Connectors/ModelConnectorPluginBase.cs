@@ -1,6 +1,6 @@
 using Floom.Model;
 using Floom.Pipeline;
-using Floom.Pipeline.Prompt;
+using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Microsoft.Extensions.Logging;
@@ -19,6 +19,17 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
         // Initialize settings with specific plugin settings class
         _settings = new ModelConnectorPluginConfig(context.Configuration.Configuration);
         InitializeClient(_settings);
+
+        if (string.IsNullOrEmpty(_settings.Voice) && context.Manifest != null)
+        {
+            if (context.Manifest.Parameters.TryGetValue("voice", out var voiceParameter))
+            {
+                if (voiceParameter.DefaultValue is IDictionary<object, object> voiceDefaultValue)
+                {
+                    _settings.Voice = voiceDefaultValue.TryGetValue("value", out var voice) ? voice as string : string.Empty;
+                }
+            }
+        }
     }
 
     protected abstract void InitializeClient(ModelConnectorPluginConfig settings);

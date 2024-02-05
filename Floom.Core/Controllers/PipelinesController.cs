@@ -61,14 +61,20 @@ namespace Floom.Controllers
             return Task.FromResult<IActionResult>(Ok(mockFloomResponse));
         }
 
-        //JSON
-        //Think of chat, not only message. Keep Session history somewhere based on "Session ID".
-        //Think of multimodel (text, image, audio, video INPUT/OUTPUT)
-        //Think of static prompt / dynamic one + variables (SDK/API)[
         [HttpPost("Run")]
         [Consumes("application/json")]
         public async Task<IActionResult> Run(
             FloomRequest floomRequest
+        )
+        {
+            var response = await _service.Run(floomRequest);
+            return Ok(response);
+        }
+        
+        [HttpPost("Run")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> RunForm(
+            [FromForm] FloomRequest floomRequest
         )
         {
             var response = await _service.Run(floomRequest);
