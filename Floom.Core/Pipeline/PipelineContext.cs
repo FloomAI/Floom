@@ -42,6 +42,7 @@ public class PipelineContext
 
     public void AddEvent(PipelineEvent pipelineEvent)
     {
+        pipelineEvent.Timestamp = DateTime.UtcNow;
         _events.Add(pipelineEvent);
     }
 

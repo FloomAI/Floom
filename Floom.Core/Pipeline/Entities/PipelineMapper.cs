@@ -1,6 +1,6 @@
 using Floom.Pipeline.Entities.Dtos;
-using Floom.Plugin;
 using Floom.Plugin.Base;
+using Floom.Utils;
 
 namespace Floom.Pipeline.Entities;
 
@@ -39,11 +39,13 @@ public static class PipelineMapper
 
     private static PluginConfigurationEntity ToEntity(this PipelineDto.PluginConfigurationDto pluginConfig)
     {
-        return new PluginConfigurationEntity
+        var entity = new PluginConfigurationEntity
         {
             package = pluginConfig.Package,
-            configuration = new Dictionary<string, object>(pluginConfig.Configuration)
+            configuration = MongoUtils.ConvertToBsonDocument(pluginConfig.Configuration)
         };
+        
+        return entity;
     }
     
     public static PluginConfiguration ToModel(this PluginConfigurationEntity pluginConfigurationEntity)
@@ -51,7 +53,7 @@ public static class PipelineMapper
         return new PluginConfiguration
         {
             Package = pluginConfigurationEntity.package,
-            Configuration = pluginConfigurationEntity.configuration
+            Configuration = MongoUtils.ConvertBsonDocumentToDictionary(pluginConfigurationEntity.configuration)
         };
     }
 

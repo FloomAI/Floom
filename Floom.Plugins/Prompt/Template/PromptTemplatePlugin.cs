@@ -64,7 +64,6 @@ public class PromptTemplatePlugin: FloomPluginBase
 
         pipelineContext.AddEvent(new PromptTemplateResultEvent 
         { 
-            Timestamp = DateTime.UtcNow,
             ResultData = promptRequest,
         });
 
