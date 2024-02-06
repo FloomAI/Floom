@@ -1,9 +1,6 @@
-using Floom.Auth;
 using Floom.Pipeline;
-using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using DataType = Floom.Pipeline.Entities.Dtos.DataType;
 
 namespace Floom.Controllers
 {
@@ -25,48 +22,31 @@ namespace Floom.Controllers
         }
         
         [HttpPost("Commit")]
-        public async Task<IActionResult?> Commit(PipelineDto pipelineDto)
+        public async Task<IActionResult?> Commit(PipelineDto? pipelineDto)
         {
             _logger.LogInformation("Pipelines/Commit Invoked");
-            await _service.Commit(pipelineDto);
-            return new OkResult();
-        }
-
-        public Task<IActionResult> RunMockPipeline()
-        {
-            var mockFloomResponse = new FloomResponse
+            
+            if (pipelineDto == null)
             {
-                messageId = "mockMessageId123",
-                chatId = "mockChatId456",
-                values = new List<ResponseValue>
-                {
-                    new ResponseValue
-                    {
-                        type = DataType.String,
-                        format = "text/plain",
-                        value = "Hello, this is a mock string!",
-                        b64 = Convert.ToBase64String(
-                            System.Text.Encoding.UTF8.GetBytes("Hello, this is a mock string!")),
-                        url = "http://example.com/mockurl"
-                    },
-                    // Add more ResponseValue items as needed
-                },
-                processingTime = 12345,
-                tokenUsage = new FloomResponseTokenUsage
-                {
-                    // Populate with mock data
-                }
-            };
+                return GenerateBadRequestResponse();
+            }
 
-            return Task.FromResult<IActionResult>(Ok(mockFloomResponse));
+            await _service.Commit(pipelineDto);
+            
+            return new OkResult();
         }
 
         [HttpPost("Run")]
         [Consumes("application/json")]
         public async Task<IActionResult> Run(
-            FloomRequest floomRequest
+            FloomRequest? floomRequest
         )
         {
+            if (floomRequest == null)
+            {
+                return GenerateBadRequestResponse();
+            }
+
             var response = await _service.Run(floomRequest);
             return Ok(response);
         }
@@ -74,11 +54,36 @@ namespace Floom.Controllers
         [HttpPost("Run")]
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> RunForm(
-            [FromForm] FloomRequest floomRequest
+            [FromForm] FloomRequest? floomRequest
         )
         {
+            if (floomRequest == null)
+            {
+                return GenerateBadRequestResponse();
+            }
+            
             var response = await _service.Run(floomRequest);
+            
+            if (response == null)
+            {
+                // Handle null response appropriately
+                return NotFound();
+            }
+
             return Ok(response);
+
+            return Ok(response);
+        }
+        
+        private IActionResult GenerateBadRequestResponse()
+        {
+            var errorResponse = new
+            {
+                Status = 400,
+                Title = "Bad Request",
+                Detail = "Invalid request: The request body is missing or incorrectly formatted."
+            };
+            return BadRequest(errorResponse);
         }
     }
 }

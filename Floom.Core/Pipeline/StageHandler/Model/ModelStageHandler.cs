@@ -56,17 +56,10 @@ public class ModelStageHandler : IModelStageHandler
                     
                     var pluginResult = await connectorPlugin.Execute(pluginContext, pipelineContext);
                     
-                    if(pluginResult.Success)
+                    pipelineContext.AddEvent(new ModelConnectorResultEvent
                     {
-                        pipelineContext.AddEvent(new ModelConnectorResultEvent
-                        {
-                            Response = pluginResult.ResultData as FloomPromptResponse,
-                        });
-                    }
-                    else
-                    {
-                        _logger.LogError("Error executing model connector plugin: {Message}", pluginResult.Message);
-                    }
+                        Response = pluginResult.ResultData as FloomPromptResponse,
+                    });
                 }
                 else
                 {

@@ -6,7 +6,7 @@ namespace Floom.Pipeline;
 public interface IPipelinesService
 {
     Task<IActionResult?> Commit(PipelineDto pipelineDto);
-    Task<IActionResult> Run(FloomRequest floomRequest);
+    Task<FloomResponseBase?> Run(FloomRequest floomRequest);
 }
 
 public class PipelinesService : IPipelinesService
@@ -28,7 +28,7 @@ public class PipelinesService : IPipelinesService
         return new OkObjectResult(new { Message = $"Pipeline Committed Successfully" });
     }
 
-    public async Task<IActionResult> Run(FloomRequest floomRequest)
+    public async Task<FloomResponseBase?> Run(FloomRequest floomRequest)
     {
         return await _pipelineExecutor.Value.Execute(floomRequest);
     }

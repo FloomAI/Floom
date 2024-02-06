@@ -3,14 +3,13 @@ using Floom.Pipeline.Entities.Dtos;
 using Floom.Pipeline.StageHandler.Model;
 using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Repository;
-using Microsoft.AspNetCore.Mvc;
-using MongoDB.Bson;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Floom.Pipeline;
 
 public interface IPipelineExecutor
 {
-    Task<IActionResult> Execute(FloomRequest floomRequest);
+    Task<FloomResponseBase> Execute(FloomRequest floomRequest);
 }
 
 public class PipelineExecutor : IPipelineExecutor
@@ -32,7 +31,7 @@ public class PipelineExecutor : IPipelineExecutor
         _promptStageHandler = promptStageHandler;
     }
 
-    public async Task<IActionResult> Execute(FloomRequest floomRequest)
+    public async Task<FloomResponseBase> Execute(FloomRequest floomRequest)
     {
         _logger.LogInformation($"Starting Pipeline Execution: {floomRequest.pipelineId}");
 
@@ -71,22 +70,46 @@ public class PipelineExecutor : IPipelineExecutor
         var promptResponseEvents = pipelineContext.GetEvents().OfType<ModelConnectorResultEvent>();
         
         var promptResponse = promptResponseEvents.FirstOrDefault()?.Response;
-        
-        var floomResponse = new FloomResponse()
-        {
-            messageId = "",
-            chatId = "",
-            values = promptResponse?.values,
-            processingTime = promptResponse.elapsedProcessingTime,
-            tokenUsage = promptResponse.tokenUsage == null
-                ? new FloomResponseTokenUsage()
-                : promptResponse.tokenUsage.ToFloomResponseTokenUsage()
-        };
 
+        FloomResponseBase? floomResponse;
+        
+        if (promptResponse == null)
+        {
+            _logger.LogError($"Model Stage: No response from model connector");
+            floomResponse = new FloomPipelineErrorResponse()
+            {
+                success = false,
+                message = "No response from model connector",
+            };
+        }
+        else if(promptResponse.success == false)
+        {
+            _logger.LogError($"Model Stage: Failed: {promptResponse.message}");
+            floomResponse = new FloomPipelineErrorResponse()
+            {
+                success = false,
+                message = promptResponse.message,
+                errorCode = promptResponse.errorCode
+            };
+        }
+        else
+        {
+            floomResponse = new FloomResponse()
+            {
+                messageId = "",
+                chatId = "",
+                values = promptResponse?.values,
+                processingTime = promptResponse.elapsedProcessingTime,
+                tokenUsage = promptResponse.tokenUsage == null
+                    ? new FloomResponseTokenUsage()
+                    : promptResponse.tokenUsage.ToFloomResponseTokenUsage()
+            };
+        }
+        
         _logger.LogInformation($"Completing Pipeline Execution: {floomRequest.pipelineId}");
 
         pipelineContext.Status = PipelineExecutionStatus.Completed;
 
-        return new OkObjectResult(floomResponse);
+        return floomResponse;
     }
 }

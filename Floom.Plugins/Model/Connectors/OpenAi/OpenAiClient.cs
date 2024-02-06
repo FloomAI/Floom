@@ -89,8 +89,32 @@ public class OpenAiClient : IModelConnectorClient
             // Call the API and get the response
             _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}chat/completions");
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}chat/completions", content);
-            response.EnsureSuccessStatusCode();
+            
+            var responseCode = response.StatusCode;
 
+            if (responseCode == HttpStatusCode.Unauthorized)
+            {
+                _logger.LogError("Unable to authenticate to OpenAI");
+                
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Unable to authenticate",
+                    errorCode = ModelConnectorErrors.InvalidApiKey
+                };
+            }
+
+            if (responseCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogError("Invalid model name " + model);
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Invalid model name",
+                    errorCode = ModelConnectorErrors.InvalidModelName
+                };
+            }
+            
             string responseContent = await response.Content.ReadAsStringAsync();
             GenerateTextResponseBody? chatResponse =
                 JsonSerializer.Deserialize<GenerateTextResponseBody>(responseContent);
@@ -103,6 +127,7 @@ public class OpenAiClient : IModelConnectorClient
             //Fill Response
             promptResponse = new FloomPromptResponse()
             {
+                success = true,
                 elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
                 tokenUsage = new FloomPromptTokenUsage()
                 {
@@ -194,7 +219,6 @@ public class OpenAiClient : IModelConnectorClient
             {
                 _logger.LogError("Error while receiving response from OpenAI, too many requests");
                 // handle too many requests (billing, quota issues)
-                throw new Exception("Error while receiving response from OpenAI, too many requests");
             }
 
             //response.EnsureSuccessStatusCode();
@@ -247,7 +271,32 @@ public class OpenAiClient : IModelConnectorClient
             //Call the API and get the response
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}images/generations", content);
 
+            var responseCode = response.StatusCode;
+
+            if (responseCode == HttpStatusCode.Unauthorized)
+            {
+                _logger.LogError("Unable to authenticate to OpenAI");
+                
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Unable to authenticate",
+                    errorCode = ModelConnectorErrors.InvalidApiKey
+                };
+            }
+
+            if (responseCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogError("Invalid model name " + model);
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Invalid model name",
+                    errorCode = ModelConnectorErrors.InvalidModelName
+                };
+            }
             string responseContent = await response.Content.ReadAsStringAsync();
+            
             GenerateImageResponseBody? generateResponse =
                 JsonSerializer.Deserialize<GenerateImageResponseBody>(responseContent);
 
@@ -300,6 +349,7 @@ public class OpenAiClient : IModelConnectorClient
             }
 
             //Fill Response
+            promptResponse.success = true;
             promptResponse.elapsedProcessingTime = swPrompt.ElapsedMilliseconds;
         }
 
@@ -336,8 +386,30 @@ public class OpenAiClient : IModelConnectorClient
             _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}audio/speech");
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}audio/speech", content);
 
-            response.EnsureSuccessStatusCode();
+            var responseCode = response.StatusCode;
 
+            if (responseCode == HttpStatusCode.Unauthorized)
+            {
+                _logger.LogError("Unable to authenticate to OpenAI");
+                
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Unable to authenticate",
+                    errorCode = ModelConnectorErrors.InvalidApiKey
+                };
+            }
+
+            if (responseCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogError("Invalid model name " + model);
+                return new FloomPromptResponse()
+                {
+                    success = false,
+                    message = $"OpenAI: Invalid model name",
+                    errorCode = ModelConnectorErrors.InvalidModelName
+                };
+            }
             // Handling binary data
             var responseBytes = await response.Content.ReadAsByteArrayAsync();
 
@@ -346,6 +418,7 @@ public class OpenAiClient : IModelConnectorClient
 
             promptResponse = new FloomPromptResponse()
             {
+                success = true,
                 elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
                 values = new List<ResponseValue>
                 {
@@ -388,8 +461,32 @@ public class OpenAiClient : IModelConnectorClient
 
                 // Call the API and get the response
                 var response = await client.PostAsync($"{MainUrl}audio/transcriptions", content);
-                response.EnsureSuccessStatusCode();
 
+                var responseCode = response.StatusCode;
+
+                if (responseCode == HttpStatusCode.Unauthorized)
+                {
+                    _logger.LogError("Unable to authenticate to OpenAI");
+                
+                    return new FloomPromptResponse()
+                    {
+                        success = false,
+                        message = $"OpenAI: Unable to authenticate",
+                        errorCode = ModelConnectorErrors.InvalidApiKey
+                    };
+                }
+
+                if (responseCode == HttpStatusCode.NotFound)
+                {
+                    _logger.LogError("Invalid model name " + model);
+                    return new FloomPromptResponse()
+                    {
+                        success = false,
+                        message = $"OpenAI: Invalid model name",
+                        errorCode = ModelConnectorErrors.InvalidModelName
+                    };
+                }
+                
                 // Assuming the response is JSON (adjust accordingly)
                 var responseString = await response.Content.ReadAsStringAsync();
                 var transcriptionResponse = JsonSerializer.Deserialize<GenerateSpeechResponseBody>(responseString);
@@ -397,6 +494,7 @@ public class OpenAiClient : IModelConnectorClient
                 //Fill Response
                 promptResponse = new FloomPromptResponse()
                 {
+                    success = true,
                     elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
                 };
 

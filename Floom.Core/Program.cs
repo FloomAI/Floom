@@ -6,6 +6,7 @@ using Floom.Data;
 using Floom.Events;
 using Floom.Logs;
 using Floom.Pipeline;
+using Floom.Pipeline.Entities.Dtos;
 using Floom.Pipeline.StageHandler.Model;
 using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Plugin.Context;
@@ -75,6 +76,7 @@ builder.Services.AddControllers(
 );
 
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+// builder.Services.AddTransient<PipelineDto.PipelineDtoValidator>();
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddSingleton(new SerializerBuilder().Build());
