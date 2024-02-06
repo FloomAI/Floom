@@ -1,12 +1,14 @@
+using MongoDB.Bson;
+
 namespace Floom.Plugin.Base;
 
 public class PluginConfigurationEntity
 {
     public string package { get; set; }
-    public Dictionary<string, object> configuration { get; set; }
+    public BsonDocument configuration { get; set; }
 
     public PluginConfigurationEntity()
     {
-        configuration = new Dictionary<string, object>();
+        configuration = new BsonDocument();
     }
 }

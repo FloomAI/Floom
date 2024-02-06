@@ -21,29 +21,40 @@ public class PluginYamlTypeConverter : IYamlTypeConverter
             var scalar = parser.Expect<Scalar>();
             var propertyName = scalar.Value;
 
-            switch (parser.Current)
+            // Check what the next token is and handle accordingly
+            if (parser.Accept<SequenceStart>(out _))
             {
-                case Scalar:
+                // If the next token is a SequenceStart, handle as a list
+                parser.Expect<SequenceStart>();
+                var list = new List<string>();
+                while (!parser.Accept<SequenceEnd>(out _))
                 {
-                    var propertyValue = parser.Expect<Scalar>().Value;
-
-                    if (propertyName.Equals("package", StringComparison.OrdinalIgnoreCase))
-                    {
-                        pluginConfig.Package = propertyValue;
-                    }
-                    else
-                    {
-                        pluginConfig.Configuration[propertyName.ToLower()] = propertyValue;
-                    }
-
-                    break;
+                    var itemValue = parser.Expect<Scalar>().Value;
+                    list.Add(itemValue);
                 }
-                case MappingStart:
+                parser.Expect<SequenceEnd>();
+
+                // Here we handle storing the list, depending on your storage logic
+                pluginConfig.Configuration[propertyName] = list;
+            }
+            else if (parser.Accept<Scalar>(out _))
+            {
+                // Handle scalar values as before
+                var propertyValue = parser.Expect<Scalar>().Value;
+                if (propertyName.Equals("package", StringComparison.OrdinalIgnoreCase))
                 {
-                    var nestedConfig = ReadNestedMapping(parser);
-                    pluginConfig.Configuration[propertyName] = nestedConfig;
-                    break;
+                    pluginConfig.Package = propertyValue;
                 }
+                else
+                {
+                    pluginConfig.Configuration[propertyName.ToLower()] = propertyValue;
+                }
+            }
+            else if (parser.Accept<MappingStart>(out _))
+            {
+                // Handle nested mappings as before
+                var nestedConfig = ReadNestedMapping(parser);
+                pluginConfig.Configuration[propertyName] = nestedConfig;
             }
         }
 
@@ -52,19 +63,21 @@ public class PluginYamlTypeConverter : IYamlTypeConverter
 
     private Dictionary<string, object> ReadNestedMapping(IParser parser)
     {
+        // Implement or adjust nested mapping reading logic here
         var nestedConfig = new Dictionary<string, object>();
         parser.Expect<MappingStart>();
         while (parser.Allow<MappingEnd>() == null)
         {
-            var key = parser.Expect<Scalar>().Value;
-            var value = parser.Expect<Scalar>().Value;
-            nestedConfig[key] = value;
+            var scalar = parser.Expect<Scalar>();
+            var propertyName = scalar.Value;
+            // Here you might need to also handle sequences or nested mappings depending on your needs
+            var propertyValue = parser.Expect<Scalar>().Value;
+            nestedConfig[propertyName] = propertyValue;
         }
-
         return nestedConfig;
     }
 
-
+    
     public void WriteYaml(IEmitter emitter, object value, Type type)
     {
         // Implement serialization logic if needed

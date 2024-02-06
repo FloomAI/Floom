@@ -17,6 +17,11 @@ public class PromptContextResultEvent : PipelineEvent
     public FloomPromptRequest? ResultData { get; set; }
 }
 
+public class PromptValidationResultEvent : PipelineEvent
+{
+    public object? ResultData { get; set; }
+}
+
 public class PromptStageHandler : IPromptStageHandler
 {
     private readonly ILogger<PromptStageHandler> _logger;
@@ -73,7 +78,6 @@ public class PromptStageHandler : IPromptStageHandler
                 {
                     pipelineContext.AddEvent(new PromptTemplateResultEvent 
                     { 
-                        Timestamp = DateTime.UtcNow,
                         ResultData = pluginResult.ResultData as FloomPromptRequest,
                     });
                 }
@@ -85,7 +89,6 @@ public class PromptStageHandler : IPromptStageHandler
             // Emit an empty FloomPromptRequest
             pipelineContext.AddEvent(new PromptTemplateResultEvent 
             { 
-                Timestamp = DateTime.UtcNow,
                 ResultData = new FloomPromptRequest()
                 {
                     user = pipelineContext.Request.input,
@@ -107,9 +110,12 @@ public class PromptStageHandler : IPromptStageHandler
 
         if (promptContextConfiguration != null)
         {
-            foreach (var contextPluginConfiguration in promptContextConfiguration)
+            if(promptContextConfiguration.Any())
             {
                 _logger.LogInformation("Prompt Stage: Handling prompt context.");
+            }
+            foreach (var contextPluginConfiguration in promptContextConfiguration)
+            {
                 var contextPlugin = PluginLoader.LoadPlugin(contextPluginConfiguration.Package);
     
                 if (contextPlugin != null)
@@ -125,7 +131,6 @@ public class PromptStageHandler : IPromptStageHandler
                     {
                         pipelineContext.AddEvent(new PromptContextResultEvent 
                         { 
-                            Timestamp = DateTime.UtcNow,
                             ResultData = pluginResult.ResultData as FloomPromptRequest,
                         });
                     }
@@ -150,9 +155,32 @@ public class PromptStageHandler : IPromptStageHandler
         // Logic to handle prompt validation
         var promptValidationConfiguration = pipelineContext.Pipeline.Prompt?.Validation;
 
-        if (promptValidationConfiguration != null && promptValidationConfiguration.Any())
+        if (promptValidationConfiguration != null)
         {
-            _logger.LogInformation("Prompt Stage: Handling prompt validation.");
+            if(promptValidationConfiguration.Any())
+            {
+                _logger.LogInformation("Prompt Stage: Handling prompt validation.");
+            }
+            
+            foreach (var validationPluginConfiguration in promptValidationConfiguration)
+            {
+                var validationPlugin = PluginLoader.LoadPlugin(validationPluginConfiguration.Package);
+    
+                if (validationPlugin != null)
+                {
+                    var pluginContext = await PluginContextCreator.Create(validationPluginConfiguration);
+                
+                    validationPlugin.Initialize(pluginContext);
+                
+                    var pluginResult = await validationPlugin.Execute(pluginContext, pipelineContext);
+            
+                    // Emit an event
+                    if (pluginResult.Success)
+                    {
+                        pipelineContext.AddEvent(new PromptValidationResultEvent());
+                    }
+                }
+            }
         }
     }
 
