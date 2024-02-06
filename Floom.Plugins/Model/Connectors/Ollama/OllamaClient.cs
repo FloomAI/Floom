@@ -107,6 +107,7 @@ public class OllamaClient : IModelConnectorClient
             //Fill Response
             promptResponse = new FloomPromptResponse()
             {
+                success = true,
                 elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
             };
 

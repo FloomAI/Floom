@@ -65,12 +65,24 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
         {
             var response = ProcessPromptRequest(pipelineContext, promptRequest);
 
-            _logger.LogInformation($"{GetType()} Completed Successfully");
+            if (response.success)
+            {
+                _logger.LogInformation($"{GetType()} Completed Successfully");
+                
+                return new PluginResult()
+                {
+                    Success = true,
+                    ResultData = response
+                };
+            }
 
+            _logger.LogError($"{GetType()} Failed: {response.message}");
+                
             return new PluginResult()
             {
-                Success = true,
-                ResultData = response
+                Success = false,
+                ResultData = response,
+                Message = response.message
             };
         }
         

@@ -78,6 +78,7 @@ public class LLamaCppClient : IModelConnectorClient
 
         promptResponse = new FloomPromptResponse()
         {
+            success = true,
             elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
         };
 
