@@ -267,7 +267,7 @@ public class OpenAiClient : IModelConnectorClient
 
             string requestBody = JsonSerializer.Serialize(request);
             StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-
+            _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}images/generations");
             //Call the API and get the response
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}images/generations", content);
 

@@ -117,7 +117,7 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
 
         public override async Task<List<VectorSearchResult>> Search(List<float> vectors, uint topResults = 5)
         {
-            _logger.LogInformation("Search");
+            _logger.LogInformation($"{GetType()} Search");
             
             IMilvusClient milvusClient = GetMilvusClient();
 
