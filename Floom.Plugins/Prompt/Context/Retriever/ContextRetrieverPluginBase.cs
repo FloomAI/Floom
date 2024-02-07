@@ -83,7 +83,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
         #region Similarity Search
 
-        _logger.LogInformation("Similarity Search");
+        _logger.LogInformation("Running Similarity Search");
 
         if (_config.VectorStore != null)
         {
