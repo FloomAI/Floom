@@ -19,10 +19,7 @@
     </ItemGroup>
 
     <Target Name="PostBuild" AfterTargets="Build">
-        <!-- Ensure the Plugins directory exists -->
-        <Exec Command="mkdir -p &quot;$(SolutionDir)Floom.Core/bin/$(Configuration)/net7.0/Plugins&quot;" />
-        <!-- Copy the built DLL to the Plugins directory -->
-        <Exec Command="cp &quot;$(TargetDir)$(TargetFileName)&quot; &quot;$(SolutionDir)Floom.Core/bin/$(Configuration)/net7.0/Plugins/$(TargetFileName)&quot;" />
+        <Exec Command="cp &quot;$(TargetDir)$(TargetFileName)&quot; &quot;$(SolutionDir)Floom.Core/DLLs/$(TargetFileName)&quot;" />
     </Target>
 
 </Project>

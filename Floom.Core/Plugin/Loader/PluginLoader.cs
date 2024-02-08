@@ -19,32 +19,29 @@ public class PluginLoader : IPluginLoader
     
     public IFloomPlugin? LoadPlugin(string packageName)
     {
-        // Specify the plugins directory, relative to the current domain's base directory
-        var pluginsDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
-        var pluginAssemblies = Directory.GetFiles(pluginsDirectory, "*.dll").Select(Assembly.LoadFrom);
+        // Specify the path to the Floom.Plugins.dll file, relative to the current domain's base directory
+        var pluginFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DLLs", "Floom.Plugins.dll");
 
-        Type? pluginType = null;
-
-        // Search each assembly for the first type that matches the FloomPlugin attribute with the given package name
-        foreach (var assembly in pluginAssemblies)
+        Assembly pluginAssembly;
+        try
         {
-            pluginType = assembly.GetTypes().FirstOrDefault(t =>
-                t.GetCustomAttributes<FloomPluginAttribute>(false).Any(a => a.PackageName == packageName));
-
-            // Break if we found a plugin
-            if (pluginType != null)
-            {
-                break;
-            }
+            pluginAssembly = Assembly.LoadFrom(pluginFilePath);
         }
+        catch (FileNotFoundException)
+        {
+            _logger.LogError($"Floom.Plugins.dll not found in {pluginFilePath}");
+            return null;
+        }
+
+        Type? pluginType = pluginAssembly.GetTypes().FirstOrDefault(t =>
+            t.GetCustomAttributes<FloomPluginAttribute>(false).Any(a => a.PackageName == packageName));
 
         if (pluginType == null)
         {
-            _logger.LogError($"Plugin {packageName} not found");
+            _logger.LogError($"Plugin {packageName} not found in Floom.Plugins.dll");
             return null;
         }
 
         return (IFloomPlugin)Activator.CreateInstance(pluginType);
     }
-
 }

@@ -71,8 +71,6 @@ namespace Floom.Controllers
             }
 
             return Ok(response);
-
-            return Ok(response);
         }
         
         private IActionResult GenerateBadRequestResponse()
