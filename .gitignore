@@ -10,6 +10,7 @@ docker_volumes/
 bin/
 obj/
 Floom.Core/LocalModels/*
+Floom.Core/DLLs/*
 TestResults/*
 Todos.txt
 

@@ -1,3 +1,4 @@
+using System.Reflection;
 using Floom.Repository;
 using Floom.Utils;
 using Newtonsoft.Json;
@@ -19,7 +20,6 @@ public class PluginManifestLoader : IPluginManifestLoader
 {
     private readonly ILogger<PluginManifestLoader> _logger;
     private readonly IRepository<PluginManifestEntity> _pluginsRepository;
-    private const string ManifestFilePath = "Plugin/plugins.yml";
 
     public PluginManifestLoader(ILogger<PluginManifestLoader> logger, IRepositoryFactory repositoryFactory)
     {
@@ -27,11 +27,18 @@ public class PluginManifestLoader : IPluginManifestLoader
         _logger = logger;
     }
 
+    private static string GetManifestFilePath()
+    {
+        var assemblyLocation = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var manifestFilePath = Path.Combine(assemblyLocation, "Plugin", "plugins.yml");
+        return manifestFilePath;
+    }
+
     public async Task LoadAndUpdateManifestsAsync()
     {
         try
         {
-            var yamlContent = await File.ReadAllTextAsync(ManifestFilePath);
+            var yamlContent = await File.ReadAllTextAsync(GetManifestFilePath());
         
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -52,7 +59,7 @@ public class PluginManifestLoader : IPluginManifestLoader
         }
         catch (Exception e)
         {
-            _logger.LogError("LoadAndUpdateManifestsAsync Failed");
+            _logger.LogError(e, "LoadAndUpdateManifestsAsync Failed11");
             throw;
         }
     }
