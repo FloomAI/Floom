@@ -36,6 +36,7 @@ services:
       - DB_ADDRESS=mongo:27017
       - DB_USER=root
       - DB_PASSWORD=MyFloom
+      - FLOOM_DEPENDENCIES_PATH=./DLLs
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/floom:/app/logs
     healthcheck:
@@ -47,7 +48,6 @@ services:
       - "4050:80"
     depends_on:
      - "mongo"
-     - "standalone"
   
   # Floom comes with MongoDB for development and testing purposes. 
   # You can configure your own MongoDB for production purposes and comment this one out.

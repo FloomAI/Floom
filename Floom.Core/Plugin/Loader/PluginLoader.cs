@@ -19,8 +19,9 @@ public class PluginLoader : IPluginLoader
     
     public IFloomPlugin? LoadPlugin(string packageName)
     {
-        // Specify the path to the Floom.Plugins.dll file, relative to the current domain's base directory
-        var pluginFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DLLs", "Floom.Plugins.dll");
+        // Use the FLOOM_DEPENDENCIES_PATH environment variable if set; otherwise, default to "DLLs" folder
+        var floomDependenciesPath = Environment.GetEnvironmentVariable("FLOOM_DEPENDENCIES_PATH") ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "DLLs");
+        var pluginFilePath = Path.Combine(floomDependenciesPath, "Floom.Plugins.dll");
 
         Assembly pluginAssembly;
         try
@@ -33,7 +34,7 @@ public class PluginLoader : IPluginLoader
             return null;
         }
 
-        Type? pluginType = pluginAssembly.GetTypes().FirstOrDefault(t =>
+        var pluginType = pluginAssembly.GetTypes().FirstOrDefault(t =>
             t.GetCustomAttributes<FloomPluginAttribute>(false).Any(a => a.PackageName == packageName));
 
         if (pluginType == null)

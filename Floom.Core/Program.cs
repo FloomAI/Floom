@@ -173,7 +173,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     
     // Generate Database
     var client = app.Services.GetRequiredService<IMongoClient>();
-    var dbInitializer = new DbInitializer(client);
+    var dbInitializer = new FloomDatabaseInitializer(client);
     dbInitializer.Initialize("Floom");
 
     // Generate Initial Api Key

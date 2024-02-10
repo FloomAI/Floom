@@ -1,15 +1,18 @@
-﻿using MongoDB.Bson;
+﻿using Floom.Logs;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Floom.Repository
 {
-    public class DbInitializer
+    public class FloomDatabaseInitializer
     {
         private readonly IMongoClient _client;
-
-        public DbInitializer(IMongoClient client)
+        private readonly ILogger _logger;
+        
+        public FloomDatabaseInitializer(IMongoClient client)
         {
             _client = client;
+            _logger = FloomLoggerFactory.CreateLogger(GetType());
         }
 
         public void Initialize(string database)
@@ -20,7 +23,7 @@ namespace Floom.Repository
             // If the "Floom" database does not exist, it will be implicitly created
             if (!dbList.Contains(database))
             {
-                Console.WriteLine("Database Floom does not exist. Creating it...");
+                _logger.LogWarning("Database Floom does not exist. Creating it...");
                 var db = _client.GetDatabase(database);
                 var collection = db.GetCollection<dynamic>("DummyCollection");
 
@@ -33,11 +36,11 @@ namespace Floom.Repository
                 // Deleting DummyCollection collection
                 db.DropCollection("DummyCollection");
 
-                Console.WriteLine("Database Floom created.");
+                _logger.LogInformation("Database Floom created.");
             }
             else
             {
-                Console.WriteLine("Database Floom already exists.");
+                _logger.LogInformation("Database Floom already exists.");
             }
 
 
