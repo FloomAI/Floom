@@ -40,10 +40,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Page Include="Dockerfile"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <None Update="Plugin/plugins.yml">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
@@ -51,6 +47,10 @@
 
     <ItemGroup>
       <Folder Include="DLLs\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Page Include="Dockerfiles\Dockerfile" />
     </ItemGroup>
     
 </Project>

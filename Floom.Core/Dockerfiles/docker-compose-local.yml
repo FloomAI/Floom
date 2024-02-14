@@ -40,14 +40,14 @@ services:
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/floom:/app/logs
     healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:80/v1/Misc/Health"]
-        interval: 10s
-        timeout: 10s
-        retries: 2
+      test: ["CMD", "curl", "-f", "http://localhost:80/v1/Misc/Health"]
+      interval: 10s
+      timeout: 10s
+      retries: 2
     ports:
       - "4050:80"
     depends_on:
-     - "mongo"
+      - "mongo"
   
   # Floom comes with MongoDB for development and testing purposes. 
   # You can configure your own MongoDB for production purposes and comment this one out.
