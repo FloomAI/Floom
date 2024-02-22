@@ -13,7 +13,7 @@ Floom.Core/LocalModels/*
 Floom.Core/DLLs/*
 TestResults/*
 Todos.txt
-
+build/
 # Common IntelliJ Platform excludes
 
 # User specific
