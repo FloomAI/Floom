@@ -23,8 +23,6 @@ RUN dotnet build "Floom.Core.csproj" -c Release -o /app/build
 FROM build AS publish
 RUN dotnet publish "Floom.Core.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-RUN ls -la /app/publish
-
 # Final image
 FROM base AS final
 WORKDIR /app
