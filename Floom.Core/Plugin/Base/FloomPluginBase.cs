@@ -1,3 +1,4 @@
+using Floom.Base;
 using Floom.Pipeline;
 using Floom.Plugin.Context;
 
@@ -42,7 +43,7 @@ public class FloomPluginBase : IFloomPlugin
         PipelineContext pipelineContext)
     {
         _logger.LogInformation($"Executing Plugin {pluginContext.Package}");
-        
+
         return new PluginResult
         {
             Success = true

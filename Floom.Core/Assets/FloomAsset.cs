@@ -1,4 +1,4 @@
-using Floom.Entities.Assets;
+using Floom.Assets;
 using MongoDB.Bson;
 
 namespace Floom.Data;
