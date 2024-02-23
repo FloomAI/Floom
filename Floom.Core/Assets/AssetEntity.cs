@@ -1,7 +1,7 @@
 using Floom.Repository;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace Floom.Entities.Assets
+namespace Floom.Assets
 {
     [BsonIgnoreExtraElements]
     public class AssetEntity : DatabaseEntity
@@ -12,5 +12,6 @@ namespace Floom.Entities.Assets
         public string? storedPath { get; set; }
         public string? extension { get; set; }
         public long size { get; set; } //bytes
+        public string? checksum { get; set; } // Add this line
     }
 }

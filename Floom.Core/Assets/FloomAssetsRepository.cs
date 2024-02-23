@@ -1,10 +1,10 @@
 using Floom.Base;
-using Floom.Entities.Assets;
+using Floom.Data;
 using Floom.Logs;
 using Floom.Repository;
+using Floom.Utils;
 
-namespace Floom.Data;
-
+namespace Floom.Assets;
 
 public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
 {
@@ -39,6 +39,18 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
     {
         try
         {
+            var checksum = await FileUtils.CalculateChecksumAsync(file);
+            var existingAssets = await _repository.FindByCondition(
+                a => a.originalName == file.FileName && a.checksum == checksum);
+
+            var existingAsset = existingAssets.FirstOrDefault(); // Assuming you're okay with taking the first match
+
+            if (existingAsset != null)
+            {
+                _logger.LogInformation($"File already exists: {existingAsset.assetId}");
+                return existingAsset.assetId; // Return existing asset ID
+            }
+
             var assetId = Guid.NewGuid();
             var fileExtension = Path.GetExtension(file.FileName);
 
@@ -62,7 +74,8 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
                 storedName = storedFile,
                 storedPath = filePath,
                 extension = fileExtension,
-                size = file.Length
+                size = file.Length,
+                checksum = checksum
             };
 
             await _repository.Insert(fileDocument);

@@ -1,3 +1,4 @@
+using Floom.Assets;
 using Floom.Data;
 using Microsoft.AspNetCore.Mvc;
 
