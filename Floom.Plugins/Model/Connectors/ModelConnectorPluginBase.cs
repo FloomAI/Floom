@@ -72,7 +72,7 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
                 return new PluginResult()
                 {
                     Success = true,
-                    ResultData = response
+                    Data = response
                 };
             }
 
@@ -81,7 +81,7 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
             return new PluginResult()
             {
                 Success = false,
-                ResultData = response,
+                Data = response,
                 Message = response.message
             };
         }

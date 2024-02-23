@@ -78,7 +78,7 @@ public class PromptStageHandler : IPromptStageHandler
                 {
                     pipelineContext.AddEvent(new PromptTemplateResultEvent 
                     { 
-                        ResultData = pluginResult.ResultData as FloomPromptRequest,
+                        ResultData = pluginResult.Data as FloomPromptRequest,
                     });
                 }
             }
@@ -131,7 +131,7 @@ public class PromptStageHandler : IPromptStageHandler
                     {
                         pipelineContext.AddEvent(new PromptContextResultEvent 
                         { 
-                            ResultData = pluginResult.ResultData as FloomPromptRequest,
+                            ResultData = pluginResult.Data as FloomPromptRequest,
                         });
                     }
                 }
