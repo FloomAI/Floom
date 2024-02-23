@@ -58,7 +58,7 @@ public class ModelStageHandler : IModelStageHandler
                     
                     pipelineContext.AddEvent(new ModelConnectorResultEvent
                     {
-                        Response = pluginResult.ResultData as FloomPromptResponse,
+                        Response = pluginResult.Data as FloomPromptResponse,
                     });
                 }
                 else

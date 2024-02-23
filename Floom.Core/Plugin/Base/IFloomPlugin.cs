@@ -1,13 +1,11 @@
+using Floom.Base;
 using Floom.Pipeline;
 using Floom.Plugin.Context;
 
 namespace Floom.Plugin.Base;
 
-public class PluginResult
+public class PluginResult : FloomOperationResult<object>
 {
-    public bool Success { get; set; }
-    public string? Message { get; set; }
-    public object? ResultData { get; set; }
 }
 
 public interface IFloomPlugin
