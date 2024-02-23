@@ -1,4 +1,6 @@
+using Floom.Repository;
 using Microsoft.AspNetCore.Mvc;
+using MongoDB.Driver;
 
 namespace Floom.Controllers
 {
@@ -6,17 +8,22 @@ namespace Floom.Controllers
     [Route("/v{version:apiVersion}/[controller]")]
     public class MiscController : ControllerBase
     {
-        private readonly ILogger<MiscController> _logger;
-
-        public MiscController(
-            ILogger<MiscController> logger)
+        private IMongoClient _mongoClient;
+        
+        public MiscController(IMongoClient mongoClient)
         {
-            _logger = logger;
+            _mongoClient = mongoClient;
         }
 
         [HttpGet("Health")]
         public async Task<IActionResult> Health()
         {
+            var dbInitializer = new FloomDatabaseInitializer(_mongoClient);
+            var mongoResult = await dbInitializer.TestConnection();
+            if (!mongoResult)
+            {
+                return StatusCode(500, "Mongo Unhealthy");
+            }
             return Ok("Healthy");
         }
     }
