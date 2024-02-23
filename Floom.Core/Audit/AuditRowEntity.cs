@@ -2,7 +2,7 @@
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Options;
 
-namespace Floom.Entities.AuditRow
+namespace Floom.Audit
 {
     [BsonIgnoreExtraElements]
     //Non-technical transactions, quearible later

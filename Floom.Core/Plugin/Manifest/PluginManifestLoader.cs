@@ -75,6 +75,7 @@ public class PluginManifestLoader : IPluginManifestLoader
 
     private async Task UpdateManifestInDatabase(PluginManifestEntity manifest)
     {
+        manifest.AddCreatedByOwner("floom-manifest-loader");
         await _pluginsRepository.UpsertEntity(manifest, manifest.package);
     }
 

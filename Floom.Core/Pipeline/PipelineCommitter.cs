@@ -41,7 +41,7 @@ public class PipelineCommitter : IPipelineCommitter
         }
 
         var pipelineEntity = pipelineDto.ToEntity();
-        
+        pipelineEntity.AddCreatedByOwner("floom-user");
         await _repository.Insert(pipelineEntity);
         
         // Update Events Manager with plugins used in pipeline

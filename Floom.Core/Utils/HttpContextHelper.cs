@@ -4,18 +4,22 @@ namespace Floom.Utils;
 
 public static class HttpContextHelper
 {
-    public static String? GetApiKeyFromHttpContext()
+    public static string GetApiKeyFromHttpContext()
     {
         var httpContext = new HttpContextAccessor().HttpContext;
+        
         if (httpContext == null)
         {
-            return null;
+            return "";
         }
 
-        return (httpContext.Items.TryGetValue(ApiKeyAuthorizationAttribute.ApiKey,
-                    out var apiKeyDetailsObj) &&
-                apiKeyDetailsObj is ApiKeyEntity apiKeyDocument)
-            ? apiKeyDocument.key
-            : null;
+        var apiKeyEntity = httpContext.Items[ApiKeyAuthorizationAttribute.ApiKey];
+        
+        if(apiKeyEntity != null)
+        {
+            return ((ApiKeyEntity)apiKeyEntity).key;
+        }
+
+        return "";
     }
 }

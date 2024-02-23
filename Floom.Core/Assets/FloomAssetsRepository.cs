@@ -40,11 +40,9 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
         try
         {
             var checksum = await FileUtils.CalculateChecksumAsync(file);
-            var existingAssets = await _repository.FindByCondition(
+            var existingAsset = await _repository.FindByCondition(
                 a => a.originalName == file.FileName && a.checksum == checksum);
-
-            var existingAsset = existingAssets.FirstOrDefault(); // Assuming you're okay with taking the first match
-
+            
             if (existingAsset != null)
             {
                 _logger.LogInformation($"File already exists: {existingAsset.assetId}");

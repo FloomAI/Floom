@@ -13,7 +13,8 @@ public interface IRepository<T> where T : DatabaseEntity
     Task<T?> Get(string id, string uniqueKey = "id");
     Task<IEnumerable<T>> GetAll();
     Task<IEnumerable<T>> GetAll(string id, string uniqueKey = "id");
-    Task<IEnumerable<T>> FindByCondition(Expression<Func<T, bool>> condition);
+    Task<IEnumerable<T>> FindByConditionAsList(Expression<Func<T, bool>> condition);
+    Task<T?> FindByCondition(Expression<Func<T, bool>> condition);
 }
 
 public class Repository<T> : IRepository<T> where T : DatabaseEntity
@@ -30,7 +31,7 @@ public class Repository<T> : IRepository<T> where T : DatabaseEntity
     public Task Insert(T entity)
     {
         entity.createdAt = DateTime.UtcNow;
-        entity.createdBy = HttpContextHelper.GetApiKeyFromHttpContext() ?? "";
+        entity.AddCreatedByApiKey(HttpContextHelper.GetApiKeyFromHttpContext());
         return _collection.InsertOneAsync(entity);
     }
     
@@ -94,9 +95,14 @@ public class Repository<T> : IRepository<T> where T : DatabaseEntity
         return await _collection.Find(filter).ToListAsync();
     }
     
-    public async Task<IEnumerable<T>> FindByCondition(Expression<Func<T, bool>> condition)
+    public async Task<IEnumerable<T>> FindByConditionAsList(Expression<Func<T, bool>> condition)
     {
         // Use the Find method with the condition and call ToListAsync to execute the query asynchronously
         return await _collection.Find(condition).ToListAsync();
+    }
+
+    public async Task<T?> FindByCondition(Expression<Func<T, bool>> condition)
+    {
+        return await _collection.Find(condition).FirstOrDefaultAsync();
     }
 }

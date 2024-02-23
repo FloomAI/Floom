@@ -1,5 +1,4 @@
 using Floom.Base;
-using Floom.Entities.AuditRow;
 using Floom.Logs;
 using Floom.Repository;
 using Floom.Utils;
@@ -40,7 +39,6 @@ public class FloomAuditService : FloomSingletonBase<FloomAuditService>
         AuditRowEntity auditRowEntity = new AuditRowEntity()
         {
             action = action,
-            createdBy = HttpContextHelper.GetApiKeyFromHttpContext() ?? "",
             createdAt = DateTime.UtcNow,
             objectType = objectType,
             objectId = objectId,
@@ -48,6 +46,8 @@ public class FloomAuditService : FloomSingletonBase<FloomAuditService>
             messageId = messageId,
             chatId = chatId
         };
+        
+        auditRowEntity.AddCreatedByApiKey(HttpContextHelper.GetApiKeyFromHttpContext() ?? "");
 
         if (attributes != null)
         {
