@@ -15,113 +15,68 @@ namespace Floom.Repository
             _logger = FloomLoggerFactory.CreateLogger(GetType());
         }
 
-        public void Initialize(string database)
+        public async Task Initialize(string database)
         {
-            // List all databases to check if "Floom" exists
-            var dbList = _client.ListDatabases().ToList().Select(db => db["name"].AsString);
-
-            // If the "Floom" database does not exist, it will be implicitly created
-            if (!dbList.Contains(database))
+            if (await EnsureMongoDBConnection())
             {
-                _logger.LogWarning("Database Floom does not exist. Creating it...");
-                var db = _client.GetDatabase(database);
-                var collection = db.GetCollection<dynamic>("DummyCollection");
+                var dbList = _client.ListDatabases().ToList().Select(db => db["name"].AsString);
+                if (!dbList.Contains(database))
+                {
+                    _logger.LogWarning("Database {Database} does not exist. Creating it...", database);
+                    var db = _client.GetDatabase(database);
+                    var collection = db.GetCollection<dynamic>("DummyCollection");
 
-                // Inserting a dummy record to actually create the database
-                collection.InsertOne(new { DummyField = "DummyValue" });
+                    collection.InsertOne(new { DummyField = "DummyValue" });
+                    collection.DeleteOne(Builders<dynamic>.Filter.Eq("DummyField", "DummyValue"));
+                    db.DropCollection("DummyCollection");
 
-                // Deleting the dummy record immediately
-                collection.DeleteOne(Builders<dynamic>.Filter.Eq("DummyField", "DummyValue"));
-
-                // Deleting DummyCollection collection
-                db.DropCollection("DummyCollection");
-
-                _logger.LogInformation("Database Floom created.");
+                    _logger.LogInformation("Database {Database} created.", database);
+                }
+                else
+                {
+                    _logger.LogInformation("Database {Database} already exists.", database);
+                }
             }
             else
             {
-                _logger.LogInformation("Database Floom already exists.");
+                _logger.LogError("Failed to establish a connection to MongoDB after multiple attempts.");
             }
-
-
-            // Connect to MongoDB
-
-            // Access the admin database to execute createUser command
-            //var adminDatabase = _client.GetDatabase("admin");
-
-            //// Check if user exists
-            //var userExists = DoesUserExist(adminDatabase, "newUser", "Floom");
-
-            //// Create the user if they do not exist
-            //if (!userExists)
-            //{
-            //    var command = new BsonDocument
-            //{
-            //    {"createUser", "FloomUser"},
-            //    {"pwd", "MyFloom"},
-            //    {"roles", new BsonArray
-            //        {
-            //            new BsonDocument
-            //            {
-            //                {"role", "readWrite"},
-            //                {"db", "Floom"}
-            //            }
-            //        }
-            //    }
-            //};
-            //    var result = adminDatabase.RunCommand<BsonDocument>(command);
-            //    Console.WriteLine("User created: " + result);
-            //}
-            //else
-            //{
-            //    Console.WriteLine("User already exists.");
-            //}
-
-            //// Create the Floom database by inserting a dummy document and immediately removing it
-            //var floomEngineDatabase = _client.GetDatabase("Floom");
-            //var collection = floomEngineDatabase.GetCollection<BsonDocument>("dummyCollection");
-            //collection.InsertOne(new BsonDocument("name", "dummy"));
-            //collection.DeleteOne(new BsonDocument("name", "dummy"));
-
-            ////Delete the collection
-
-            //Console.WriteLine("Floom database created.");
         }
 
-        // Function to check if a user already exists in a given database
-        static bool DoesUserExist(IMongoDatabase adminDatabase, string username, string dbName)
+        private async Task<bool> EnsureMongoDBConnection()
         {
-            var filter = Builders<BsonDocument>.Filter.And(
-                Builders<BsonDocument>.Filter.Eq("user", username),
-                Builders<BsonDocument>.Filter.Eq("db", dbName)
-            );
+            int attempts = 5;
+            for (int attempt = 1; attempt <= attempts; attempt++)
+            {
+                _logger.LogInformation("Attempting to connect to MongoDB, attempt {Attempt} of {Attempts}", attempt, attempts);
+                if (await TestConnection())
+                {
+                    _logger.LogInformation("Successfully connected to MongoDB.");
+                    return true;
+                }
 
-            var usersCollection = adminDatabase.GetCollection<BsonDocument>("system.users");
-            var user = usersCollection.Find(filter).FirstOrDefault();
+                if (attempt < attempts)
+                {
+                    _logger.LogWarning("Failed to connect to MongoDB, retrying in 15 seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(15));
+                }
+            }
 
-            return user != null;
+            return false;
         }
 
         public async Task<bool> TestConnection()
         {
             try
             {
-                // Use the admin database for the ping command
                 var database = _client.GetDatabase("admin");
-
-                // Run the ping command
                 var command = new BsonDocument("ping", 1);
-                var result = await database.RunCommandAsync<BsonDocument>(command);
-
-                // If the command did not throw an exception, the server is reachable
+                await database.RunCommandAsync<BsonDocument>(command);
                 return true;
             }
             catch (Exception ex)
             {
-                // Log the exception
-                Console.WriteLine($"An error occurred while testing the connection: {ex.Message}");
-
-                // If the command threw an exception, the server is not reachable
+                _logger.LogError(ex, "An error occurred while testing the MongoDB connection.");
                 return false;
             }
         }

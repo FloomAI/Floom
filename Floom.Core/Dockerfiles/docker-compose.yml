@@ -29,6 +29,7 @@ services:
   
   floom:
     image: floomai/floom:latest
+    container_name: floom-core
     environment:
       - DB_ADDRESS=mongo:27017
       - DB_USER=root
@@ -44,7 +45,8 @@ services:
     ports:
       - "4050:80"
     depends_on:
-     - "mongo"
+      mongo:
+        condition: service_healthy
   
   # Floom comes with MongoDB for development and testing purposes. 
   # You can configure your own MongoDB for production purposes and comment this one out.
@@ -57,10 +59,10 @@ services:
     volumes:
       - ../docker_volumes/mongo:/data/db
     healthcheck:
-      test: [ "CMD", "mongo", "--eval", "db.adminCommand('ping')" ]
-      interval: 30s
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
       timeout: 10s
-      retries: 3
+      retries: 10
     ports:
       - "4060:27017"
 
