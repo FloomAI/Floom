@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Floom.Base;
 using Floom.Logs;
 using Floom.Plugins.Model.Connectors.OpenAi;
 using Microsoft.AspNetCore.Mvc;
@@ -23,7 +24,7 @@ public class OpenAiEmbeddings : EmbeddingsProvider
         _openAiClient.ApiKey = apiKey;
     }
 
-    public async Task<List<List<float>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
     {
         _logger.LogInformation("GetEmbeddingsAsync");
         return await _openAiClient.GetEmbeddingsAsync(strings);

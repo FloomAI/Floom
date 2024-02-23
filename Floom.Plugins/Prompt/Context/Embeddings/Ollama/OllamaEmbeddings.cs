@@ -1,3 +1,4 @@
+using Floom.Base;
 using Floom.Logs;
 using Floom.Plugins.Model.Connectors.Ollama;
 using Microsoft.AspNetCore.Mvc;
@@ -27,9 +28,9 @@ public class OllamaEmbeddings : EmbeddingsProvider
         public List<float>? embedding { get; set; }
     }
 
-    public Task<List<List<float>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
     {
-        return _ollamaClient.GetEmbeddingsAsync(strings);
+        return await _ollamaClient.GetEmbeddingsAsync(strings);
     }
 
     public Task<IActionResult> ValidateModelAsync()

@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Floom.Base;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
@@ -158,7 +159,7 @@ public class OllamaClient : IModelConnectorClient
         return new BadRequestObjectResult(new { Message = $"Model {model} Not Valid" });
     }
 
-    public async Task<List<List<float>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
     {
         var allEmbeddings = new List<List<float>>();
 
@@ -181,7 +182,9 @@ public class OllamaClient : IModelConnectorClient
             var response = await client.PostAsync($"{MainUrl}embeddings", content);
             if (response.StatusCode == HttpStatusCode.InternalServerError)
             {
-                Console.WriteLine("Error while receiving response from Ollama");
+                var errorMessage = $"Error while receiving response from Ollama. Status Code: {response.StatusCode}";
+                _logger.LogError(errorMessage);
+                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
             }
 
             var responseContent = await response.Content.ReadAsStringAsync();
@@ -198,6 +201,6 @@ public class OllamaClient : IModelConnectorClient
             allEmbeddings.Add(embeddingResponse.embedding);
         }
 
-        return allEmbeddings;
+        return FloomOperationResult<List<List<float>>>.CreateSuccessResult(allEmbeddings);
     }
 }
