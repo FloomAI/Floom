@@ -3,6 +3,7 @@ using Floom.Pipeline.Entities.Dtos;
 using Floom.Pipeline.StageHandler.Model;
 using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Repository;
+using Floom.Utils;
 using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Floom.Pipeline;
@@ -41,14 +42,21 @@ public class PipelineExecutor : IPipelineExecutor
             Status = PipelineExecutionStatus.NotStarted,
             CurrentStage = PipelineExecutionStage.Init
         };
-
-        var pipeline = await _pipelineRepository.Get(floomRequest.pipelineId, "name");
         
+        var httpRequestApiKey = HttpContextHelper.GetApiKeyFromHttpContext();
+        var pipeline = await _pipelineRepository.FindByCondition(a => a.name == floomRequest.pipelineId && (string?)a.createdBy["apiKey"] == httpRequestApiKey);
+
         if (pipeline == null)
         {
-            throw new InvalidOperationException($"Pipeline with ID {floomRequest.pipelineId} not found. Cannot execute {pipelineContext}");
+            var errorMessage = $"Pipeline with ID {floomRequest.pipelineId} not found.";
+            _logger.LogError(errorMessage);
+            return new FloomPipelineErrorResponse()
+            {
+                success = false,
+                message = errorMessage
+            };
         }
-
+        
         pipelineContext.Request = floomRequest;
         pipelineContext.Pipeline = pipeline.ToModel();
         

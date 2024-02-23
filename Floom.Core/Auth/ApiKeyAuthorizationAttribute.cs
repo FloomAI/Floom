@@ -46,10 +46,9 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
         
-        var existingApiKey = await repository.FindByCondition(
-            a => a.key == apiKey);
+        var existingApiKey = await repository.FindByCondition(a => a.key == apiKey);
         
-        if (!existingApiKey.Any())
+        if (existingApiKey == null)
         {
             context.Result = new UnauthorizedResult();
             return;

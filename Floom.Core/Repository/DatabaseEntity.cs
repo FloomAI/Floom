@@ -8,6 +8,27 @@ namespace Floom.Repository
         public ObjectId Id { get; set; } = ObjectId.Empty;
         public DateTime createdAt { get; set; }
         [BsonIgnoreIfNull] public string name { get; set; }
-        public string createdBy { get; set; } //id of the api-key
+        
+        [BsonRepresentation(BsonType.Document)]
+        public Dictionary<string, object> createdBy { get; set; }
+
+        public DatabaseEntity()
+        {
+            // Initialize with an empty dictionary to avoid null reference exceptions
+            createdBy = new Dictionary<string, object>();
+        }
+        
+        // Method to add a key-value pair to the createdBy dictionary
+        public void AddCreatedByApiKey(object value)
+        {
+            var key = "apiKey";
+            createdBy[key] = value;
+        }
+        
+        public void AddCreatedByOwner(object value)
+        {
+            var key = "owner";
+            createdBy[key] = value;
+        }
     }
 }

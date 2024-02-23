@@ -1,4 +1,3 @@
-using Floom.Plugin;
 using Floom.Plugin.Base;
 using Floom.Repository;
 
