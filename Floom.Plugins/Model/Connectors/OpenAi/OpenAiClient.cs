@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Floom.Base;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
@@ -188,7 +189,7 @@ public class OpenAiClient : IModelConnectorClient
         return new OkObjectResult(new { Message = $"Model valid" });
     }
 
-    public async Task<List<List<float>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
     {
         List<List<float>> pagesEmbeddings = new List<List<float>>();
 
@@ -210,15 +211,26 @@ public class OpenAiClient : IModelConnectorClient
             // Call the API and get the response
             _logger.LogInformation("Calling OpenAI embeddings API {0}", $"{MainUrl}embeddings");
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}embeddings", content);
+            
             if (response.StatusCode == HttpStatusCode.InternalServerError)
             {
-                _logger.LogError("Error while receiving response from OpenAI");
+                var errorMessage = $"Error while receiving response from OpenAI. Status Code: {response.StatusCode}";
+                _logger.LogError(errorMessage);
+                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
             }
 
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
-                _logger.LogError("Error while receiving response from OpenAI, too many requests");
-                // handle too many requests (billing, quota issues)
+                var errorMessage = "Error while receiving response from OpenAI, too many requests";
+                _logger.LogError(errorMessage);
+                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
+            }
+            
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                var errorMessage = "Unable to authenticate to OpenAI";
+                _logger.LogError(errorMessage);
+                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
             }
 
             //response.EnsureSuccessStatusCode();
@@ -241,7 +253,7 @@ public class OpenAiClient : IModelConnectorClient
         }
 
         _logger.LogInformation("OpenAI embeddings received");
-        return pagesEmbeddings;
+        return FloomOperationResult<List<List<float>>>.CreateSuccessResult(pagesEmbeddings);
     }
 
     public async Task<FloomPromptResponse> GenerateImageAsync(FloomPromptRequest prompt, string model)

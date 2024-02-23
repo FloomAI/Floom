@@ -1,3 +1,4 @@
+using Floom.Assets;
 using Floom.Audit;
 using Floom.Data;
 using Floom.Entities.AuditRow;
@@ -71,13 +72,22 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
         EmbeddingsProvider? embeddingsProvider = GetEmbeddingsProvider(pipelineContext, _config.Embeddings);
 
-        var queryEmbeddings = new List<List<float>>();
-        
-        queryEmbeddings = await embeddingsProvider.GetEmbeddingsAsync(new List<string>()
+        var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(new List<string>()
         {
             pipelineContext.Request.input
+        });
+
+        if (embeddingsResult.Success == false)
+        {
+            _logger.LogError($"Error while getting embeddings from Pipeline Model Connectors. {embeddingsResult.Message}");
+            
+            return new PluginResult()
+            {
+                Success = false
+            };
         }
-        );
+
+        var queryEmbeddings = embeddingsResult.Data;
 
         #endregion
         
@@ -119,7 +129,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         return new PluginResult()
         {
             Success = true,
-            ResultData = promptRequest
+            Data = promptRequest
         };
     }
 
@@ -134,7 +144,14 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         var actionResult = await GenerateAndStoreEmbeddingsFromFile(pipelineContext, floomAsset, _config.VectorStore,
             _config.Embeddings);
         
-        _logger.LogInformation($"Handling event {EventName} for plugin {pluginContext.Package} finished with result {actionResult}");
+        if (actionResult is OkObjectResult)
+        {
+            _logger.LogInformation($"Handling event {EventName} for plugin {pluginContext.Package} finished with result success");
+        }
+        else
+        {
+            _logger.LogError($"Handling event {EventName} for plugin {pluginContext.Package} finished with result failure");
+        }
     }
     
     private EmbeddingsProvider GetEmbeddingsProvider(PipelineContext pipelineContext, EmbeddingsConfiguration embeddingsConfiguration)
@@ -219,7 +236,15 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
         _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
         
-        embeddingsVectors = await embeddingsProvider.GetEmbeddingsAsync(splitText);
+        var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(splitText);
+
+        if (embeddingsResult.Success == false)
+        {
+            _logger.LogError($"Error while getting embeddings from Pipeline Model Connectors. {embeddingsResult.Message}");
+            return new BadRequestResult();
+        }
+        
+        embeddingsVectors = embeddingsResult.Data;
         
         #endregion
 
