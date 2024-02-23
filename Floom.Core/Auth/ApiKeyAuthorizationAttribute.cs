@@ -7,20 +7,26 @@ namespace Floom.Auth;
 public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
 {
     public const string ApiKey = "API_KEY_DETAILS";
-    private bool _authorizeController;
-    private bool _authorizeMethod;
+    private bool _shouldEnforceAuthorization;
 
-    public ApiKeyAuthorizationAttribute(bool authorizeController = true, bool authorizeMethod = true)
+    public ApiKeyAuthorizationAttribute()
     {
-        _authorizeController = authorizeController;
-        _authorizeMethod = authorizeMethod;
+        if(Environment.GetEnvironmentVariable("USE_AUTHENTICATION") != null)
+        {
+            var useAuthentication = Environment.GetEnvironmentVariable("USE_AUTHENTICATION");
+            _shouldEnforceAuthorization = useAuthentication == "true";
+        }
+        else
+        {
+            _shouldEnforceAuthorization = false;
+        }
     }
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
-        if (!_authorizeController && !_authorizeMethod)
+        if (!_shouldEnforceAuthorization)
         {
-            // If authorization is disabled for both controller and method, skip the check.
+            // If authorization is disabled skip the check.
             return;
         }
 

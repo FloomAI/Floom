@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Floom.Assets;
 using Floom.Audit;
+using Floom.Auth;
 using Floom.Config;
 using Floom.Events;
 using Floom.Logs;
@@ -112,6 +113,8 @@ builder.Services.AddSingleton<EventsManager>();
 // Adding services to DI container
 builder.Services.AddScoped<IPipelinesService, PipelinesService>();
 builder.Services.AddTransient(provider => new Lazy<IPipelinesService>(provider.GetRequiredService<IPipelinesService>));
+
+builder.Services.AddScoped<IUsersService, UsersService>();
 
 builder.Services.AddSingleton<IPluginLoader, PluginLoader>();
 builder.Services.AddSingleton<IPluginContextCreator, PluginContextCreator>();

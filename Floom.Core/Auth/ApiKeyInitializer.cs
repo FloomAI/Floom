@@ -1,5 +1,4 @@
 ﻿using Floom.Repository;
-using MongoDB.Driver;
 
 namespace Floom.Auth
 {
@@ -19,9 +18,7 @@ namespace Floom.Auth
             if (existingApiKey == null)
             {
                 var random = new Random();
-                var apiKey = new string(Enumerable
-                    .Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 32)
-                    .Select(s => s[random.Next(s.Length)]).ToArray());
+                var apiKey = ApiKeyUtils.GenerateApiKey();
 
                 _repository.Insert(new ApiKeyEntity { Key = apiKey });
 
