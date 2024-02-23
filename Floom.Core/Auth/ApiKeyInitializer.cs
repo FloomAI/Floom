@@ -20,7 +20,7 @@ namespace Floom.Auth
                 var random = new Random();
                 var apiKey = ApiKeyUtils.GenerateApiKey();
 
-                _repository.Insert(new ApiKeyEntity { Key = apiKey });
+                _repository.Insert(new ApiKeyEntity { key = apiKey });
 
                 Console.WriteLine($"Generated API Key: {apiKey}");
             }

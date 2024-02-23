@@ -15,7 +15,7 @@ public static class HttpContextHelper
         return (httpContext.Items.TryGetValue(ApiKeyAuthorizationAttribute.ApiKey,
                     out var apiKeyDetailsObj) &&
                 apiKeyDetailsObj is ApiKeyEntity apiKeyDocument)
-            ? apiKeyDocument.Key
+            ? apiKeyDocument.key
             : null;
     }
 }

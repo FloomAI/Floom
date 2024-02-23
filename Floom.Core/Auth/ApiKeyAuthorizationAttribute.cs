@@ -1,13 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Floom.Repository;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using MongoDB.Driver;
 
 namespace Floom.Auth;
 
 public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
 {
     public const string ApiKey = "API_KEY_DETAILS";
-    private bool _shouldEnforceAuthorization;
+    private readonly bool _shouldEnforceAuthorization;
 
     public ApiKeyAuthorizationAttribute()
     {
@@ -36,27 +36,26 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
+        var repositoryFactory = context.HttpContext.RequestServices.GetRequiredService<IRepositoryFactory>();
+        var repository = repositoryFactory.Create<ApiKeyEntity>("api-keys");
+
         var apiKey = apiKeyValues.FirstOrDefault(); // Convert StringValues to a regular string
         if (string.IsNullOrEmpty(apiKey))
         {
             context.Result = new UnauthorizedResult();
             return;
         }
-
-        var mongoClient = context.HttpContext.RequestServices.GetRequiredService<IMongoClient>();
-        var database = mongoClient.GetDatabase("Floom"); // Replace with your actual database name
-        var apiKeyCollection = database.GetCollection<ApiKeyEntity>("api-keys");
-
-        var apiKeyDocument = await apiKeyCollection.Find(a => a.Key == apiKey).FirstOrDefaultAsync();
-        if (apiKeyDocument == null)
+        
+        var existingApiKey = await repository.FindByCondition(
+            a => a.key == apiKey);
+        
+        if (!existingApiKey.Any())
         {
             context.Result = new UnauthorizedResult();
             return;
         }
 
-        //You can also perform additional checks or store the key details in the request context for future use.
-        //For example:
-        context.HttpContext.Items[ApiKey] = apiKeyDocument;
+        context.HttpContext.Items[ApiKey] = existingApiKey;
 
         await Task.CompletedTask;
     }
