@@ -31,8 +31,8 @@ public class UsersService : IUsersService
 
         var apiKey = new ApiKeyEntity
         {
-            UserId = user.Id.ToString(),
-            Key =  ApiKeyUtils.GenerateApiKey()
+            userId = user.Id.ToString(),
+            key =  ApiKeyUtils.GenerateApiKey()
         };
 
         await _apiKeyRepository.Insert(apiKey);
