@@ -18,7 +18,7 @@ public class PipelineCommitter : IPipelineCommitter
 
     public PipelineCommitter(IRepositoryFactory repositoryFactory, EventsManager eventsManager)
     {
-        _repository = repositoryFactory.Create<PipelineEntity>("pipelines");
+        _repository = repositoryFactory.Create<PipelineEntity>();
         _eventsManager = eventsManager;
     }
     
@@ -37,7 +37,7 @@ public class PipelineCommitter : IPipelineCommitter
 
         if (existingPipeline != null)
         {
-            await _repository.DeleteByName(pipelineDto.Pipeline.Name);
+            await _repository.Delete(pipelineDto.Pipeline.Name, "name");
         }
 
         var pipelineEntity = pipelineDto.ToEntity();

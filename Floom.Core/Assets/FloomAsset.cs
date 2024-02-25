@@ -7,7 +7,6 @@ public class FloomAsset
 {
     public string? Id { get; set; }
     public string? OriginalName { get; set; }
-    public string? AssetId { get; set; }
     public string? StoredName { get; set; }
     public string? StoredPath { get; set; }
     public string? Extension { get; set; }
@@ -17,9 +16,8 @@ public class FloomAsset
     {
         return new FloomAsset
         {
-            Id = assetEntity.Id == ObjectId.Empty ? null : assetEntity.Id.ToString(),
+            Id = assetEntity.Id == string.Empty ? null : assetEntity.Id,
             OriginalName = assetEntity.originalName,
-            AssetId = assetEntity.assetId,
             StoredName = assetEntity.storedName,
             StoredPath = assetEntity.storedPath,
             Extension = assetEntity.extension,

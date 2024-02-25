@@ -40,8 +40,8 @@ public class EventsManager
     
     public EventsManager(IRepositoryFactory repositoryFactory, IPluginLoader pluginLoader, IPluginContextCreator pluginContextCreator)
     {
-        _pipelinesRepository = repositoryFactory.Create<PipelineEntity>("pipelines");
-        _pluginsRepository = repositoryFactory.Create<PluginManifestEntity>("plugins");
+        _pipelinesRepository = repositoryFactory.Create<PipelineEntity>();
+        _pluginsRepository = repositoryFactory.Create<PluginManifestEntity>();
         _pluginLoader = pluginLoader;
         _pluginContextCreator = pluginContextCreator;
     }

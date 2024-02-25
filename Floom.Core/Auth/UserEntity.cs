@@ -1,9 +1,9 @@
+using Floom.Base;
 using Floom.Repository;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Floom.Auth;
 
-[BsonIgnoreExtraElements]
+[CollectionName("users")]
 public class UserEntity : DatabaseEntity
 {
     public string type { get; set; }

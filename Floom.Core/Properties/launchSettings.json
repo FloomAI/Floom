@@ -44,7 +44,8 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "FLOOM_DEPENDENCIES_PATH": "$(SolutionDir)Floom.Core/DLLs",
-        "USE_AUTHENTICATION": "true"
+        "FLOOM_AUTHENTICATION": "true",
+        "FLOOM_DATABASE_TYPE": "mongodb"
       }
     }
   }

@@ -11,9 +11,9 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
 
     public ApiKeyAuthorizationAttribute()
     {
-        if(Environment.GetEnvironmentVariable("USE_AUTHENTICATION") != null)
+        if(Environment.GetEnvironmentVariable("FLOOM_AUTHENTICATION") != null)
         {
-            var useAuthentication = Environment.GetEnvironmentVariable("USE_AUTHENTICATION");
+            var useAuthentication = Environment.GetEnvironmentVariable("FLOOM_AUTHENTICATION");
             _shouldEnforceAuthorization = useAuthentication == "true";
         }
         else
@@ -37,7 +37,7 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
         }
 
         var repositoryFactory = context.HttpContext.RequestServices.GetRequiredService<IRepositoryFactory>();
-        var repository = repositoryFactory.Create<ApiKeyEntity>("api-keys");
+        var repository = repositoryFactory.Create<ApiKeyEntity>();
 
         var apiKey = apiKeyValues.FirstOrDefault(); // Convert StringValues to a regular string
         if (string.IsNullOrEmpty(apiKey))
@@ -46,7 +46,7 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
         
-        var existingApiKey = await repository.FindByCondition(a => a.key == apiKey);
+        var existingApiKey = await repository.Get(apiKey, "key");
         
         if (existingApiKey == null)
         {

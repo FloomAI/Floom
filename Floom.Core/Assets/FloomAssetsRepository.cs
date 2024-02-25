@@ -30,7 +30,7 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
                 throw new InvalidOperationException("FloomAssetsRepository is already Initialized.");
             }
 
-            _repository = repositoryFactory.Create<AssetEntity>("assets");
+            _repository = repositoryFactory.Create<AssetEntity>();
             _isInitialized = true;
         }
     }
@@ -40,16 +40,16 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
         try
         {
             var checksum = await FileUtils.CalculateChecksumAsync(file);
-            var existingAsset = await _repository.FindByCondition(
-                a => a.originalName == file.FileName && a.checksum == checksum);
+            
+            var existingAsset = await _repository.FindByCondition(a => a.originalName == file.FileName && a.checksum == checksum);
             
             if (existingAsset != null)
             {
-                _logger.LogInformation($"File already exists: {existingAsset.assetId}");
-                return existingAsset.assetId; // Return existing asset ID
+                _logger.LogInformation($"File already exists: {existingAsset.Id}");
+                return existingAsset.Id; // Return existing asset ID
             }
 
-            var assetId = Guid.NewGuid();
+            var assetId = Guid.NewGuid().ToString();
             var fileExtension = Path.GetExtension(file.FileName);
 
             if (!Directory.Exists(_filesDirectory))
@@ -67,7 +67,7 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
 
             var fileDocument = new AssetEntity
             {
-                assetId = assetId.ToString(),
+                Id = assetId,
                 originalName = file.FileName,
                 storedName = storedFile,
                 storedPath = filePath,

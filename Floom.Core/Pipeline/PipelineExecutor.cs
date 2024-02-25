@@ -27,7 +27,7 @@ public class PipelineExecutor : IPipelineExecutor
         ILogger<PipelineExecutor> logger)
     {
         _logger = logger;
-        _pipelineRepository = repositoryFactory.Create<PipelineEntity>("pipelines");
+        _pipelineRepository = repositoryFactory.Create<PipelineEntity>();
         _modelStageHandler = modelStageHandler;
         _promptStageHandler = promptStageHandler;
     }
@@ -44,8 +44,9 @@ public class PipelineExecutor : IPipelineExecutor
         };
         
         var httpRequestApiKey = HttpContextHelper.GetApiKeyFromHttpContext();
-        var pipeline = await _pipelineRepository.FindByCondition(a => a.name == floomRequest.pipelineId && (string?)a.createdBy["apiKey"] == httpRequestApiKey);
 
+        var pipeline = await _pipelineRepository.FindByCondition(a => a.name == floomRequest.pipelineId && (string?)a.createdBy["apiKey"] == httpRequestApiKey);
+        
         if (pipeline == null)
         {
             var errorMessage = $"Pipeline with ID {floomRequest.pipelineId} not found.";
