@@ -17,7 +17,7 @@ public class FloomAuditService : FloomSingletonBase<FloomAuditService>
 
     public override void Initialize(IRepositoryFactory repositoryFactory)
     {
-        _repository = repositoryFactory.Create<AuditRowEntity>("audit");
+        _repository = repositoryFactory.Create<AuditRowEntity>();
     }
 
     public async Task<IEnumerable<AuditRowEntity>> GetByChatId(string chatId)

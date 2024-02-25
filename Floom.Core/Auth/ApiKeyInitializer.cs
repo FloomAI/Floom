@@ -8,7 +8,7 @@ namespace Floom.Auth
 
         public ApiKeyInitializer(IRepositoryFactory repositoryFactory)
         {
-            _repository = repositoryFactory.Create<ApiKeyEntity>("api-keys");
+            _repository = repositoryFactory.Create<ApiKeyEntity>();
         }
 
         public void Initialize()

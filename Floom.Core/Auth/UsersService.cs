@@ -15,8 +15,8 @@ public class UsersService : IUsersService
 
     public UsersService(IRepositoryFactory repositoryFactory)
     {
-        _userRepository = repositoryFactory.Create<UserEntity>("users");
-        _apiKeyRepository = repositoryFactory.Create<ApiKeyEntity>("api-keys");
+        _userRepository = repositoryFactory.Create<UserEntity>();
+        _apiKeyRepository = repositoryFactory.Create<ApiKeyEntity>();
     }
 
     public async Task<ApiKeyEntity> RegisterGuestUserAsync()

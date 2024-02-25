@@ -1,11 +1,15 @@
+using Floom.Base;
 using Floom.Plugin.Base;
 using Floom.Repository;
 
 namespace Floom.Pipeline.Entities;
 
+[CollectionName("pipelines")]
 public class PipelineEntity: DatabaseEntity
 {
     public string kind { get; set; }
+    public string name { get; set; }
+    public string userId { get; set; }
     public IEnumerable<PluginConfigurationEntity>? model { get; set; }
     public PromptStageEntity? prompt { get; set; }
     public ResponseStageEntity? response { get; set; }
