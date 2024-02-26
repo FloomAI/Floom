@@ -1,4 +1,5 @@
 using Floom.Repository;
+using Floom.Repository.MongoDb;
 using Microsoft.AspNetCore.Mvc;
 using MongoDB.Driver;
 
@@ -18,7 +19,7 @@ public class MiscController : ControllerBase
     [HttpGet("Health")]
     public async Task<IActionResult> Health()
     {
-        var dbInitializer = new FloomDatabaseInitializer(_mongoClient);
+        var dbInitializer = new MongoDbInitializer(_mongoClient);
         var mongoResult = await dbInitializer.TestConnection();
         if (!mongoResult)
         {

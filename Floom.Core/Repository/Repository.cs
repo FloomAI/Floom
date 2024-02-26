@@ -1,108 +1,68 @@
 using System.Linq.Expressions;
 using Floom.Utils;
-using MongoDB.Bson;
-using MongoDB.Driver;
 
 namespace Floom.Repository;
 
 public interface IRepository<T> where T : DatabaseEntity
 {
     Task Insert(T entity);
-    Task UpsertEntity(T DatabaseEntity, string uid);
-    Task DeleteByName(string id);
-    Task<T?> Get(string id, string uniqueKey = "id");
+    Task UpsertEntity(T entity, string uid, string uniqueKey);
+    Task Delete(string id, string uniqueKey);
+    Task<T?> Get(string id, string uniqueKey);
     Task<IEnumerable<T>> GetAll();
-    Task<IEnumerable<T>> GetAll(string id, string uniqueKey = "id");
-    Task<IEnumerable<T>> FindByConditionAsList(Expression<Func<T, bool>> condition);
+    Task<IEnumerable<T>> GetAll(string id, string uniqueKey);
     Task<T?> FindByCondition(Expression<Func<T, bool>> condition);
+    Task<T?> FindByAttributesAsync(Dictionary<string, object> attributes);
 }
 
 public class Repository<T> : IRepository<T> where T : DatabaseEntity
 {
-    private readonly IMongoClient _client;
-    protected IMongoCollection<T> _collection;
+    private readonly IDatabase<T> _database;
 
-    public Repository(IMongoClient mongoClient, string collectionName)
+    public Repository(IDatabase<T> database)
     {
-        var database = mongoClient.GetDatabase("Floom");
-        _collection = database.GetCollection<T>(collectionName);
+        _database = database;
     }
 
     public Task Insert(T entity)
     {
         entity.createdAt = DateTime.UtcNow;
         entity.AddCreatedByApiKey(HttpContextHelper.GetApiKeyFromHttpContext());
-        return _collection.InsertOneAsync(entity);
+        return _database.Create(entity);
     }
     
-    public async Task UpsertEntity(T databaseEntity, string uid)
+    public async Task UpsertEntity(T databaseEntity, string uid, string column)
     {
-        var filter = Builders<T>.Filter.Eq("package", uid);
-        
-        var existingItem = await _collection.Find(filter).FirstOrDefaultAsync();
-
-        if (existingItem != null)
-        {
-            databaseEntity.Id = existingItem.Id;
-            var updateFilter = Builders<T>.Filter.Eq("_id", ((dynamic)existingItem).Id);
-            await _collection.ReplaceOneAsync(updateFilter, databaseEntity);
-        }
-        else
-        {
-            await Insert(databaseEntity);
-        }
+        await _database.Upsert(databaseEntity, uid, column);
     }
 
-    public async Task DeleteByName(string name)
+    public async Task Delete(string name, string uniqueKey)
     {
-        var filter = Builders<T>.Filter.Eq("name", name);
-
-        await _collection.DeleteOneAsync(filter);
+        await _database.Delete(name, uniqueKey);
     }
 
-    public async Task<T?> Get(string id, string uniqueKey = "_id")
+    public async Task<T?> Get(string value, string key)
     {
-        FilterDefinition<T> filter;
-        if (uniqueKey.Equals("_id"))
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, new ObjectId(id));
-        }
-        else
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, id);
-        }
-
-        return await _collection.Find(filter).FirstOrDefaultAsync();
+        return await _database.Read(value, key);
     }
 
     public async Task<IEnumerable<T>> GetAll()
     {
-        return await _collection.Find(_ => true).ToListAsync();
+        return await _database.ReadAll();
     }
     
-    public async Task<IEnumerable<T>> GetAll(string id, string uniqueKey = "id")
+    public async Task<IEnumerable<T>> GetAll(string id, string uniqueKey)
     {
-        FilterDefinition<T> filter;
-        if (uniqueKey.Equals("_id"))
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, new ObjectId(id));
-        }
-        else
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, id);
-        }
-
-        return await _collection.Find(filter).ToListAsync();
+        return await _database.ReadAll(id, uniqueKey);
     }
     
-    public async Task<IEnumerable<T>> FindByConditionAsList(Expression<Func<T, bool>> condition)
-    {
-        // Use the Find method with the condition and call ToListAsync to execute the query asynchronously
-        return await _collection.Find(condition).ToListAsync();
-    }
-
     public async Task<T?> FindByCondition(Expression<Func<T, bool>> condition)
     {
-        return await _collection.Find(condition).FirstOrDefaultAsync();
+        return await _database.ReadByCondition(condition);
+    }
+
+    public async Task<T?> FindByAttributesAsync(Dictionary<string, object> attributes)
+    {
+        return await _database.ReadByAttributes(attributes);
     }
 }

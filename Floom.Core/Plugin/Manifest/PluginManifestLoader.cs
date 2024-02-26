@@ -23,7 +23,7 @@ public class PluginManifestLoader : IPluginManifestLoader
 
     public PluginManifestLoader(ILogger<PluginManifestLoader> logger, IRepositoryFactory repositoryFactory)
     {
-        _pluginsRepository = repositoryFactory.Create<PluginManifestEntity>("plugins");
+        _pluginsRepository = repositoryFactory.Create<PluginManifestEntity>();
         _logger = logger;
     }
 
@@ -76,7 +76,7 @@ public class PluginManifestLoader : IPluginManifestLoader
     private async Task UpdateManifestInDatabase(PluginManifestEntity manifest)
     {
         manifest.AddCreatedByOwner("floom-manifest-loader");
-        await _pluginsRepository.UpsertEntity(manifest, manifest.package);
+        await _pluginsRepository.UpsertEntity(manifest, manifest.package, "package");
     }
 
     public async Task<PluginManifest?> Load(string packageName)
