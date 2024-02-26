@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Amazon.DynamoDBv2;
 using Floom.Assets;
 using Floom.Audit;
 using Floom.Auth;
@@ -13,6 +14,8 @@ using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
 using Floom.Plugin.Manifest;
 using Floom.Repository;
+using Floom.Repository.DynamoDB;
+using Floom.Repository.MongoDb;
 using Floom.Utils;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -107,7 +110,8 @@ builder.Services.AddVersionedApiExplorer(
 
 #endregion
 
-builder.Services.AddSingleton<IMongoClient>(new MongoClient(MongoConfiguration.ConnectionString()));
+
+builder.Services.AddSingleton<IMongoClient>(MongoConfiguration.CreateMongoClient());
 builder.Services.AddSingleton<EventsManager>();
 
 // Adding services to DI container
@@ -169,33 +173,46 @@ var loggerFactory = LoggerFactory.Create(builder =>
 
 FloomLoggerFactory.Configure(loggerFactory);
 
-app.Lifetime.ApplicationStarted.Register(() =>
+app.Lifetime.ApplicationStarted.Register(FloomInitCallback);
+Console.WriteLine("Starting app");
+app.Run("http://*:4050"); //port inside docker
+return;
+
+async void FloomInitCallback()
 {
     var repositoryFactory = app.Services.GetRequiredService<IRepositoryFactory>();
-    
+
     // Generate Database
-    var client = app.Services.GetRequiredService<IMongoClient>();
-    var dbInitializer = new FloomDatabaseInitializer(client);
-    dbInitializer.Initialize("Floom");
+    var databaseType = Environment.GetEnvironmentVariable("FLOOM_DATABASE_TYPE");
+    if (databaseType is "mongodb")
+    {
+        var client = app.Services.GetRequiredService<IMongoClient>();
+        var dbInitializer = new MongoDbInitializer(client);
+        await dbInitializer.Initialize("Floom");
+    }
+    else if (databaseType is "dynamodb")
+    {
+        var dynamoDbClient = DynamoDbConfiguration.CreateCloudDynamoDbClient();
+        var dbInitializer = new DynamoDbInitializer(dynamoDbClient);
+        await dbInitializer.Initialize();
+    }
 
     // Generate Initial Api Key
     // var apiKeyInitializer = new ApiKeyInitializer(repositoryFactory);
     // apiKeyInitializer.Initialize();
-    
+
     var pluginManifestLoader = app.Services.GetRequiredService<IPluginManifestLoader>();
-    pluginManifestLoader.LoadAndUpdateManifestsAsync();
-    
+    await pluginManifestLoader.LoadAndUpdateManifestsAsync();
+
     // Get an instance of EventsManager
     var eventsManager = app.Services.GetService<EventsManager>();
 
     // Call the OnFloomStarts method
     eventsManager?.OnFloomStarts();
-        
+
     // Generate Floom Assets Repository
     FloomAssetsRepository.Instance.Initialize(repositoryFactory);
-    
+
     // Generate Floom Audit Service
     FloomAuditService.Instance.Initialize(repositoryFactory);
-});
-
-app.Run("http://*:80"); //port inside docker
+}

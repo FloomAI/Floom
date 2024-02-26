@@ -1,17 +1,19 @@
+using Floom.Base;
 using Floom.Repository;
-using MongoDB.Bson.Serialization.Attributes;
 
 namespace Floom.Plugin.Manifest;
 
+[CollectionName("plugins")]
 public class PluginManifestEntity : DatabaseEntity
 {
+    public string? name { get; set; }
     public string? description { get; set; }
     public string? package { get; set; }
     public string? version { get; set; }
     public string? runtime { get; set; }
-    public IEnumerable<string> supportedFloomVersions { get; set; }
-    public IEnumerable<string> supportedStages { get; set; }
-    public IEnumerable<string> events { get; set; }
+    public List<string> supportedFloomVersions { get; set; }
+    public List<string> supportedStages { get; set; }
+    public List<string> events { get; set; }
     public Dictionary<string, PluginManifestEntityParameter> parameters { get; set; }
     public PluginManifestEntityOwnerInfo owner { get; set; }
     
@@ -19,7 +21,6 @@ public class PluginManifestEntity : DatabaseEntity
     {
         public string type { get; set; }
         public string description { get; set; }
-        [BsonElement("default")]
         public Dictionary<object, object> defaultValue { get; set; }
     }
 

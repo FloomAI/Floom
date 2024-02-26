@@ -16,6 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="AWSSDK.DynamoDBv2" Version="3.7.301.14" />
         <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.6"/>
         <PackageReference Include="DocX" Version="2.5.0"/>
         <PackageReference Include="FluentValidation" Version="11.8.0"/>
@@ -46,6 +47,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Include="Certificates\global-bundle.pem">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Certificates\" />
       <Folder Include="DLLs\" />
     </ItemGroup>
 
