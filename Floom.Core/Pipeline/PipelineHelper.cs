@@ -61,6 +61,26 @@ public class PipelineHelper
 
     public static PluginConfiguration? GetPluginConfigurationInPipeline(string pluginPackage, PipelineEntity pipelineEntity)
     {
-        return GetPipelinePluginsConfigurations(pipelineEntity).FirstOrDefault(p => p.Package == pluginPackage);
+        var pluginConfig = GetPipelinePluginsConfigurations(pipelineEntity).FirstOrDefault(p => p.Package == pluginPackage);
+    
+        if (pluginConfig is { Configuration: not null })
+        {
+            pluginConfig.Configuration = LowerCaseKeys(pluginConfig.Configuration);
+        }
+    
+        return pluginConfig;
     }
+    
+    private static Dictionary<string, object> LowerCaseKeys(Dictionary<string, object> originalConfiguration)
+    {
+        var lowerCaseConfiguration = new Dictionary<string, object>();
+
+        foreach (var kvp in originalConfiguration)
+        {
+            lowerCaseConfiguration[kvp.Key.ToLower()] = kvp.Value;
+        }
+
+        return lowerCaseConfiguration;
+    }
+
 }

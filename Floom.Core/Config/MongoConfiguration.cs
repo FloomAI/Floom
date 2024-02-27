@@ -5,36 +5,29 @@ namespace Floom.Config;
 
 public static class MongoConfiguration
 {
-    private static readonly string User = Environment.GetEnvironmentVariable("DB_USER") ?? "root";
-    private static readonly string Password = Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "MyFloom";
-    private static readonly string Address = Environment.GetEnvironmentVariable("DB_ADDRESS") ?? "localhost:4060";
-    
-    public static string ConnectionString()
-    {
-        return $"mongodb://{User}:{Password}@{Address}";
-    }
-
-    public static string CloudConnectionString()
-    {
-        if(Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING") != null)
-            return Environment.GetEnvironmentVariable("MONGODB_CONNECTION_STRING");
-
-        return null;
-    }
-    
     public static MongoClient CreateMongoClient()
     {
-        var template = "mongodb://{0}:{1}@{2}/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false";
-        var username = Environment.GetEnvironmentVariable("DB_USER");
-        var password = Environment.GetEnvironmentVariable("DB_PASSWORD");
-        var clusterEndpoint = Environment.GetEnvironmentVariable("DB_ADDRESS");
-        var connectionString = String.Format(template, username, password, clusterEndpoint);
-        var settings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
-        settings.SslSettings = new SslSettings
+        var template = "mongodb://{0}:{1}@{2}";
+        var username = Environment.GetEnvironmentVariable("FLOOM_DB_USER");
+        var password = Environment.GetEnvironmentVariable("FLOOM_DB_PASSWORD");
+        var clusterEndpoint = Environment.GetEnvironmentVariable("FLOOM_DB_ADDRESS");
+        var connectionString = string.Format(template, username, password, clusterEndpoint);
+        var floomEnvironment = Environment.GetEnvironmentVariable("FLOOM_ENVIRONMENT");
+        MongoClientSettings? settings = null;
+        if(floomEnvironment == "cloud")
         {
-            EnabledSslProtocols = SslProtocols.Tls12,
-        };
-        settings.UseTls = true;
+            connectionString += "/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false";
+            settings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
+            settings.SslSettings = new SslSettings
+            {
+                EnabledSslProtocols = SslProtocols.Tls12,
+            };
+            settings.UseTls = true;
+        }
+        else if (floomEnvironment == "local")
+        {
+            settings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
+        }
         var client = new MongoClient(settings);
         return client;
     }

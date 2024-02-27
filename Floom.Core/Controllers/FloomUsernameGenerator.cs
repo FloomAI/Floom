@@ -23,11 +23,8 @@ public class FloomUsernameGenerator
 
     public static string GenerateTemporaryUsername()
     {
-        // Randomly select a prefix
-        var random = new Random();
-        string prefix = prefixes[random.Next(prefixes.Length)];
-
         // Dynamic component based on a hash of the current timestamp and a random element
+        var random = new Random();
         var timestamp = DateTime.UtcNow.Ticks.ToString();
         var randomComponent = random.Next(1000, 9999).ToString();
         var uniqueComponent = timestamp + randomComponent;
@@ -40,8 +37,16 @@ public class FloomUsernameGenerator
             // Take the first 6 characters to keep it short
             var shortHash = hash.Substring(0, 6);
 
-            return $"{prefix}-{shortHash}";
+            return $"{shortHash}";
         }
+    }
+    
+    public static string GenerateTemporaryNickname()
+    {
+        // Randomly select a prefix
+        var random = new Random();
+        string prefix = prefixes[random.Next(prefixes.Length)];
+        return prefix;
     }
 
 }

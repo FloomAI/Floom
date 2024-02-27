@@ -16,23 +16,17 @@ public class MongoDatabase<T> : IDatabase<T> where T : DatabaseEntity
     
     public Task Create(T entity)
     {
-        entity.Id = ObjectId.GenerateNewId().ToString();
+        if(string.IsNullOrEmpty(entity.Id))
+        {
+            entity.Id = ObjectId.GenerateNewId().ToString();
+        }
         return _collection.InsertOneAsync(entity);
     }
 
     public async Task<T?> Read(string value, string uniqueKey = "_id")
     {
-        FilterDefinition<T> filter;
+        var filter = Builders<T>.Filter.Eq(uniqueKey, value);
         
-        if (uniqueKey.Equals("_id"))
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, new ObjectId(value));
-        }
-        else
-        {
-            filter = Builders<T>.Filter.Eq(uniqueKey, value);
-        }
-
         return await _collection.Find(filter).FirstOrDefaultAsync();
     }
     

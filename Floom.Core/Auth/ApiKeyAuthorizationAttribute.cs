@@ -55,7 +55,7 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
         }
 
         context.HttpContext.Items[ApiKey] = existingApiKey;
-
+        
         await Task.CompletedTask;
     }
 }
