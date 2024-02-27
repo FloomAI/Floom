@@ -2,6 +2,7 @@ using Floom.Events;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Floom.Repository;
+using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Pipeline;
@@ -41,7 +42,10 @@ public class PipelineCommitter : IPipelineCommitter
         }
 
         var pipelineEntity = pipelineDto.ToEntity();
+        pipelineEntity.userId = HttpContextHelper.GetUserIdFromHttpContext();
+        
         pipelineEntity.AddCreatedByOwner("floom-user");
+        
         await _repository.Insert(pipelineEntity);
         
         // Update Events Manager with plugins used in pipeline

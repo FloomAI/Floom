@@ -10,4 +10,5 @@ public class UserEntity : DatabaseEntity
     public bool validated { get; set; }
     public string emailAddress { get; set; } = string.Empty;
     public string username { get; set; } = string.Empty;
+    public string nickname { get; set; } = string.Empty;
 }

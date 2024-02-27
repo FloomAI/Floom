@@ -1,10 +1,10 @@
+using Floom.Auth;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Floom.Pipeline.StageHandler.Model;
 using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Repository;
 using Floom.Utils;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace Floom.Pipeline;
 
@@ -17,6 +17,7 @@ public class PipelineExecutor : IPipelineExecutor
 {
     private readonly ILogger<PipelineExecutor> _logger;
     private readonly IRepository<PipelineEntity> _pipelineRepository;
+    private readonly IRepository<UserEntity> _usersRepository;
     private readonly IModelStageHandler _modelStageHandler;
     private readonly IPromptStageHandler _promptStageHandler;
 
@@ -28,6 +29,7 @@ public class PipelineExecutor : IPipelineExecutor
     {
         _logger = logger;
         _pipelineRepository = repositoryFactory.Create<PipelineEntity>();
+        _usersRepository = repositoryFactory.Create<UserEntity>();
         _modelStageHandler = modelStageHandler;
         _promptStageHandler = promptStageHandler;
     }
@@ -46,6 +48,43 @@ public class PipelineExecutor : IPipelineExecutor
         var httpRequestApiKey = HttpContextHelper.GetApiKeyFromHttpContext();
 
         var pipeline = await _pipelineRepository.FindByCondition(a => a.name == floomRequest.pipelineId && (string?)a.createdBy["apiKey"] == httpRequestApiKey);
+
+        if (floomRequest.username != null)
+        {
+            _logger.LogInformation($"Pipeline Execution: User {floomRequest.username} is trying to execute pipeline {floomRequest.pipelineId}");
+            
+            var httpRequestUserId = HttpContextHelper.GetUserIdFromHttpContext();
+
+            var user = await _usersRepository.Get(httpRequestUserId, "_id");
+
+            if (user != null)
+            {
+                if(user.username != floomRequest.username)
+                {
+                    var errorMessage = $"User {floomRequest.username} is not authorized to execute pipeline {floomRequest.pipelineId}";
+                    _logger.LogError(errorMessage);
+                    return new FloomPipelineErrorResponse()
+                    {
+                        success = false,
+                        message = errorMessage
+                    };
+                }
+                else
+                {
+                    _logger.LogInformation($"Pipeline Execution: User {floomRequest.username} is executing pipeline {floomRequest.pipelineId}");
+                }
+            }
+            else
+            {
+                var errorMessage = $"User {floomRequest.username} not found.";
+                _logger.LogError(errorMessage);
+                return new FloomPipelineErrorResponse()
+                {
+                    success = false,
+                    message = errorMessage
+                };
+            }
+        }
         
         if (pipeline == null)
         {

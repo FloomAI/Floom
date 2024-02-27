@@ -16,6 +16,7 @@ using Floom.Plugin.Manifest;
 using Floom.Repository;
 using Floom.Repository.DynamoDB;
 using Floom.Repository.MongoDb;
+using Floom.Server;
 using Floom.Utils;
 using FluentValidation;
 using FluentValidation.AspNetCore;
@@ -110,6 +111,7 @@ builder.Services.AddVersionedApiExplorer(
 
 #endregion
 
+builder.Services.AddHttpClient();
 
 builder.Services.AddSingleton<IMongoClient>(MongoConfiguration.CreateMongoClient());
 builder.Services.AddSingleton<EventsManager>();
@@ -165,7 +167,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-
+app.UseMiddleware<DynamicApiRoutingMiddleware>();
 var loggerFactory = LoggerFactory.Create(builder => 
 {
     builder.AddConsole();

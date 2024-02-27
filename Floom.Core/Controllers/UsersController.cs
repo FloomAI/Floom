@@ -18,6 +18,6 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> Register()
     {
         var apiKey = await _service.RegisterGuestUserAsync();
-        return Ok(new { ApiKey = apiKey.key });
+        return Ok(apiKey);
     }
 }

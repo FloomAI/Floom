@@ -148,8 +148,10 @@ public static class PipelineMapper
     {
         var pipeline = new Pipeline
         {
+            Id = pipelineEntity.Id,
             Name = pipelineEntity.name,
-            Kind = pipelineEntity.kind
+            Kind = pipelineEntity.kind,
+            UserId = pipelineEntity.userId
         };
         
         if (pipelineEntity.model != null)

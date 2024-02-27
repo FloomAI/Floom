@@ -22,4 +22,23 @@ public static class HttpContextHelper
 
         return "";
     }
+    
+    public static string GetUserIdFromHttpContext()
+    {
+        var httpContext = new HttpContextAccessor().HttpContext;
+        
+        if (httpContext == null)
+        {
+            return "";
+        }
+
+        var apiKeyEntity = httpContext.Items[ApiKeyAuthorizationAttribute.ApiKey];
+        
+        if(apiKeyEntity != null)
+        {
+            return ((ApiKeyEntity)apiKeyEntity).userId;
+        }
+
+        return "";
+    }
 }

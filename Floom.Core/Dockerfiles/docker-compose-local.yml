@@ -18,7 +18,7 @@
 # For production, Floom recommends using production-grade managed databases: MongoDB and Milvus/Pinecone. 
 # -----------------------------------------------------------------------------------------------------
 # To use an external management database (MongoDB):
-# Modify the DB_USER, DB_PASSWORD and DB_ADDRESS environment variables in 'floom' service.
+# Modify the FLOOM_DB_USER, FLOOM_DB_PASSWORD and FLOOM_DB_ADDRESS environment variables in 'floom' service.
 # -----------------------------------------------------------------------------------------------------
 # To use an external vector database (Milvus/Pinecone):
 # Modify VDB_VENDOR, VDB_APIKEY, VDB_ENDPOINT, VDB_ENVIRONMENT, VDB_PORT environment variables in 'floom' service.
@@ -33,9 +33,9 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      - DB_ADDRESS=mongo:27017
-      - DB_USER=root
-      - DB_PASSWORD=MyFloom
+      - FLOOM_DB_ADDRESS=mongo:27017
+      - FLOOM_DB_USER=root
+      - FLOOM_DB_PASSWORD=MyFloom
       - FLOOM_DEPENDENCIES_PATH=./DLLs
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/floom:/app/logs
