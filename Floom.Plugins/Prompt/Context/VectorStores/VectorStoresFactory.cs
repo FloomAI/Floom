@@ -19,6 +19,12 @@ public static class VectorStoresFactory
                 provider.SetConnectionArgs(vectorStoreConfiguration);
                 return provider;
             }
+            case "postgres":
+            {
+                var provider = new PgVector();
+                provider.SetConnectionArgs(vectorStoreConfiguration);
+                return provider;
+            }
         }
 
         throw new Exception("No Vector Store Provider found for vendor: " + vectorStoreConfiguration.Vendor);

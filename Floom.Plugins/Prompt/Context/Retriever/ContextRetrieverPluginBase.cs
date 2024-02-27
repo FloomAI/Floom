@@ -10,6 +10,7 @@ using Floom.Plugins.Prompt.Context.VectorStores;
 using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using static System.String;
 
 namespace Floom.Plugins.Prompt.Context.Retriever;
 
@@ -60,11 +61,9 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
     {
         _logger.LogInformation($"Executing ContextRetrieverPlugin {pluginContext.Package}");
         
-        var floomAsset = await FloomAssetsRepository.Instance.GetAssetById(_config.AssetId);
-
         //List of Similarity Search Results (from all Datas)
         var vectorSearchResults = new List<VectorSearchResult>();
-        var mergedResults = string.Empty;
+        var mergedResults = Empty;
         
         //Iterate Data
         #region Get Query Embeddings
@@ -97,7 +96,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         if (_config.VectorStore != null)
         {
             var vectorStoreProvider = VectorStoresFactory.Create(_config.VectorStore);
-            vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(floomAsset.AssetId, embeddingsProvider.GetModelName());
+            vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext.PipelineName, pipelineContext.Pipeline.UserId);
             List<VectorSearchResult> results = await vectorStoreProvider.Search(
                 queryEmbeddings.First(),
                 topResults: 3
@@ -139,11 +138,10 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
         _logger.LogInformation($"Handling event {EventName} for plugin {pluginContext.Package}");
         
-        var floomAsset = await FloomAssetsRepository.Instance.GetAssetById(_config.AssetId);
-        var actionResult = await GenerateAndStoreEmbeddingsFromFile(pipelineContext, floomAsset, _config.VectorStore,
+        var actionResult = await GenerateAndStoreEmbeddingsFromFile(pipelineContext, _config.AssetsIds, _config.VectorStore,
             _config.Embeddings);
         
-        if (actionResult is OkObjectResult)
+        if (actionResult is OkResult)
         {
             _logger.LogInformation($"Handling event {EventName} for plugin {pluginContext.Package} finished with result success");
         }
@@ -177,107 +175,112 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
     
     private async Task<IActionResult> GenerateAndStoreEmbeddingsFromFile(
         PipelineContext pipelineContext,
-        FloomAsset floomAsset,
+        List<string> assetsIds,
         VectorStoreConfiguration vectorStoreConfiguration,
         EmbeddingsConfiguration embeddingsConfiguration)
     {
-        _logger.LogInformation($"Generating and storing embeddings for file {floomAsset.StoredPath}");
-        
+        _logger.LogInformation($"Preparing for generating and storing embeddings");
+
+        var vectorStoreProvider = VectorStoresFactory.Create(vectorStoreConfiguration);
+        vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext.PipelineName, pipelineContext.Pipeline.UserId);
+        await vectorStoreProvider.Prepare();
         var splitText = new List<string>();
-
-        #region Read the file
-
-        byte[]? fileBytes = null;
-        try
-        {
-            _logger.LogInformation($"Reading file {floomAsset.StoredPath} on storage");
-
-            await using var fileStream = new FileStream(floomAsset.StoredPath, FileMode.Open,
-                FileAccess.Read,
-                FileShare.Read, bufferSize: 4096, useAsync: true);
-            using var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}");
-            return new BadRequestObjectResult(new { Message = $"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}" });
-        }
-
-        #endregion
-
-        #region Parse File (Read content)
-
-        _logger.LogInformation($"Parsing file {floomAsset.StoredPath}");
-        
-        ExtractionMethod extractionMethod = ExtractionMethod.ByPages;
-        
-        _logger.LogInformation($"Extracting text from file {floomAsset.StoredPath}");
-        
-        splitText = await ParseFile(fileBytes, extractionMethod, maxCharactersPerItem: null);
-
-        #endregion
-
         var embeddingsVectors = new List<List<float>>();
 
-        #region Send split content to EmbeddingsProvider (OpenAI) (dont worry about conf at first)
-        
-        //# TODO: Temporary - Reduce to 3 pages
-        //splitText = splitText.GetRange(0, 20);
-        
-        // Iterate over plugin configuration
-        // by package, get the model connector (for now support only openai connector)
-        
-        _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors");
-
-        var embeddingsProvider = GetEmbeddingsProvider(pipelineContext, embeddingsConfiguration);
-        
-        _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
-        
-        var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(splitText);
-
-        if (embeddingsResult.Success == false)
+        foreach (var assetId in assetsIds)
         {
-            _logger.LogError($"Error while getting embeddings from Pipeline Model Connectors. {embeddingsResult.Message}");
-            return new BadRequestResult();
+            _logger.LogInformation($"Generating and storing embeddings for file {assetId}");
+
+            var floomAsset = await FloomAssetsRepository.Instance.GetAssetById(assetId);
+            
+            #region Read the file
+
+            var floomEnvironment = Environment.GetEnvironmentVariable("FLOOM_ENVIRONMENT");
+            _logger.LogInformation($"Floom Environment: {floomEnvironment}");
+            
+            byte[]? fileBytes = null;
+
+            if(floomEnvironment == "local")
+            {
+                try
+                {
+                    _logger.LogInformation($"Reading file {floomAsset.StoredPath} on storage");
+                    fileBytes = await FileUtils.ReadFileAsync(floomAsset);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}");
+                    return new BadRequestObjectResult(new { Message = $"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}" });
+                }
+            }
+            else if(floomEnvironment == "cloud")
+            {
+                try
+                {
+                    _logger.LogInformation($"Reading file {floomAsset.StoredPath} from S3");
+                    fileBytes = await FileUtils.ReadFileCloudAsync(floomAsset);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}");
+                    return new BadRequestObjectResult(new { Message = $"Error while reading file {floomAsset.StoredPath} on storage. {ex.Message}" });
+                }
+            }
+            
+            #endregion
+            
+            #region Parse File (Read content)
+
+            _logger.LogInformation($"Parsing file {floomAsset.StoredPath}");
+        
+            ExtractionMethod extractionMethod = ExtractionMethod.ByPages;
+        
+            _logger.LogInformation($"Extracting text from file {floomAsset.StoredPath}");
+        
+            var pagesContent = await ParseFile(fileBytes, extractionMethod, maxCharactersPerItem: null);
+            
+            splitText.AddRange(pagesContent);
+            
+            #endregion
+
+            #region Send split content to EmbeddingsProvider (OpenAI) (dont worry about conf at first)
+        
+            //# TODO: Temporary - Reduce to 3 pages
+            //splitText = splitText.GetRange(0, 20);
+        
+            _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors");
+
+            var embeddingsProvider = GetEmbeddingsProvider(pipelineContext, embeddingsConfiguration);
+        
+            _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
+        
+            var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(splitText);
+
+            if (embeddingsResult.Success == false)
+            {
+                _logger.LogError($"Error while getting embeddings from Pipeline Model Connectors. {embeddingsResult.Message}");
+                return new BadRequestResult();
+            }
+        
+            #endregion
+            
+            embeddingsVectors.AddRange(embeddingsResult.Data);
         }
         
-        embeddingsVectors = embeddingsResult.Data;
-        
-        #endregion
-
-
-        //# Store Embeddings in MDB (Fast switch)
-
-        #region Set VectorStore
-        
-        _logger.LogInformation($"Getting VectorStore from VectorStoreConfiguration");
-        
-        var vectorStoreProvider = VectorStoresFactory.Create(vectorStoreConfiguration);
-        
-        #endregion
-
         #region Store Embeddings in VectorStore (Cosine Similarity)
-        
-        // get storePath hash, last 4 string characters
-        
+            
         _logger.LogInformation($"Storing embeddings in VectorStore");
-        
-        vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(floomAsset.AssetId, embeddingsProvider.GetModelName());
-        // for later improvement: use indication on Data Entity when last time embeddings were inserted
-        await vectorStoreProvider.Prepare();
+
         await vectorStoreProvider.CreateAndInsertVectors(splitText, embeddingsVectors);
 
         #endregion
-        
-        //# Audit   
+            
         FloomAuditService.Instance.Insert(
             action: AuditAction.Create,
-            objectType: "data",
-            objectId: floomAsset.AssetId
+            objectType: "pipeline",
+            objectId: pipelineContext.Pipeline.Id
         );
-
+        
         return new OkResult();
     }
 }

@@ -2,8 +2,8 @@ namespace Floom.Plugins.Prompt.Context.VectorStores;
 
 public static class Utils
 {
-    public static string GetCollectionName(string dataId, string embeddingsModelName)
+    public static string GetCollectionName(string pipelineName, string userId)
     {
-        return $"fp_{dataId}_{embeddingsModelName}".Replace("-", "_").ToLower();
+        return $"pipeline-{pipelineName}_user-{userId}".Replace("-", "_").ToLower();
     }
 }
