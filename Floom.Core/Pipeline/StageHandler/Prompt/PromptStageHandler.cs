@@ -91,7 +91,7 @@ public class PromptStageHandler : IPromptStageHandler
             { 
                 ResultData = new FloomPromptRequest()
                 {
-                    user = pipelineContext.Request.input,
+                    user = pipelineContext.Request.prompt,
                 },
             });
         }

@@ -40,9 +40,19 @@ public class PipelinesController : ControllerBase
 
     [HttpPost("Run")]
     [Consumes("application/json")]
-    public async Task<IActionResult> Run(
-        FloomRequest? floomRequest
-    )
+    public async Task<IActionResult> Run(FloomRequest? floomRequest)
+    {
+        return await RunCommon(floomRequest);
+    }
+
+    [HttpPost("Run")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> RunForm([FromForm] FloomRequest? floomRequest)
+    {
+        return await RunCommon(floomRequest);
+    }
+
+    private async Task<IActionResult> RunCommon(FloomRequest? floomRequest)
     {
         if (floomRequest == null)
         {
@@ -50,31 +60,25 @@ public class PipelinesController : ControllerBase
         }
 
         var response = await _service.Run(floomRequest);
-        return Ok(response);
-    }
-        
-    [HttpPost("Run")]
-    [Consumes("multipart/form-data")]
-    public async Task<IActionResult> RunForm(
-        [FromForm] FloomRequest? floomRequest
-    )
-    {
-        if (floomRequest == null)
-        {
-            return GenerateBadRequestResponse();
-        }
-            
-        var response = await _service.Run(floomRequest);
-            
+
         if (response == null)
         {
             // Handle null response appropriately
             return NotFound();
         }
 
+        if (response is FloomPipelineErrorResponse)
+        {
+            var baseResponse = response as FloomPipelineErrorResponse;
+            if (baseResponse?.success == false)
+            {
+                return GenerateErrorResponse(baseResponse);
+            }
+        }
+
         return Ok(response);
     }
-        
+
     private IActionResult GenerateBadRequestResponse()
     {
         var errorResponse = new
@@ -82,6 +86,17 @@ public class PipelinesController : ControllerBase
             Status = 400,
             Title = "Bad Request",
             Detail = "Invalid request: The request body is missing or incorrectly formatted."
+        };
+        return BadRequest(errorResponse);
+    }
+    
+    private IActionResult GenerateErrorResponse(FloomPipelineErrorResponse response)
+    {
+        var errorResponse = new
+        {
+            Status = response.statusCode,
+            Title = "Bad Request",
+            Detail = response.message
         };
         return BadRequest(errorResponse);
     }

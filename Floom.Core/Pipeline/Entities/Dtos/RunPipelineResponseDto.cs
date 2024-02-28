@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Net;
+using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Floom.Pipeline.Entities.Dtos
@@ -25,6 +26,7 @@ namespace Floom.Pipeline.Entities.Dtos
         public bool? success { get; set; }
         public string? message { get; set; } = "";
         public int? errorCode { get; set; }
+        public HttpStatusCode? statusCode { get; set; }
     }
     
     public class ResponseValue

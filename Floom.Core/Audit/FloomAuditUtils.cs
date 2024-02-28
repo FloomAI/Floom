@@ -12,8 +12,8 @@ public class FloomAuditUtils
     {
         var attributes = new Dictionary<string, object>();
 
-        if (floomRequest.input != null)
-            attributes.Add("request", floomRequest.input);
+        if (floomRequest.prompt != null)
+            attributes.Add("request", floomRequest.prompt);
         if (floomRequest.variables != null)
             attributes.Add("requestVariables", floomRequest.variables);
         if (promptRequest.user != null)
