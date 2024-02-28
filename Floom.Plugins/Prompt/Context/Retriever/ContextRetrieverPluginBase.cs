@@ -72,7 +72,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
         var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(new List<string>()
         {
-            pipelineContext.Request.input
+            pipelineContext.Request.prompt
         });
 
         if (embeddingsResult.Success == false)

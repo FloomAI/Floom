@@ -142,12 +142,6 @@ builder.Services.AddSingleton<FloomAuditService>();
 
 builder.Services.AddTransient<IRepositoryFactory, RepositoryFactory>();
 
-// builder.Services.AddScoped<LLamaCppClient>();
-
-// Embeddings Factory
-// builder.Services.AddScoped<OpenAiEmbeddings>();
-// builder.Services.AddScoped<OllamaEmbeddings>();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

@@ -55,9 +55,9 @@ public class PromptTemplatePlugin: FloomPluginBase
             promptRequest.user = _settings.User.CompileWithVariables(pipelineContext.Request.variables);
         }
 
-        if (pipelineContext.Request.input != null)
+        if (pipelineContext.Request.prompt != null)
         {
-            promptRequest.user = pipelineContext.Request.input.CompileWithVariables(pipelineContext.Request.variables);
+            promptRequest.user = pipelineContext.Request.prompt.CompileWithVariables(pipelineContext.Request.variables);
         }
         
         _logger.LogInformation($"Completed {GetType()} Successfully");

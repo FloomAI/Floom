@@ -61,7 +61,7 @@ public class DynamicApiRoutingMiddleware
         }
         var jsonDocument = JsonDocument.Parse(requestBody);
         string? inputString = null;
-        if (jsonDocument.RootElement.TryGetProperty("input", out var inputElement))
+        if (jsonDocument.RootElement.TryGetProperty("prompt", out var inputElement))
         {
             inputString = inputElement.GetString();
         }
@@ -73,7 +73,7 @@ public class DynamicApiRoutingMiddleware
         {
             pipelineId = actualPipelineId,
             username = username,
-            input = inputString
+            prompt = inputString
         };
 
         try

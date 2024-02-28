@@ -1,3 +1,4 @@
+using System.Net;
 using Floom.Auth;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
@@ -63,10 +64,11 @@ public class PipelineExecutor : IPipelineExecutor
                 {
                     var errorMessage = $"User {floomRequest.username} is not authorized to execute pipeline {floomRequest.pipelineId}";
                     _logger.LogError(errorMessage);
-                    return new FloomPipelineErrorResponse()
+                    return new FloomPipelineErrorResponse
                     {
                         success = false,
-                        message = errorMessage
+                        message = errorMessage,
+                        statusCode = HttpStatusCode.Unauthorized
                     };
                 }
                 else
@@ -81,7 +83,8 @@ public class PipelineExecutor : IPipelineExecutor
                 return new FloomPipelineErrorResponse()
                 {
                     success = false,
-                    message = errorMessage
+                    message = errorMessage,
+                    statusCode = HttpStatusCode.Unauthorized
                 };
             }
         }
@@ -93,7 +96,8 @@ public class PipelineExecutor : IPipelineExecutor
             return new FloomPipelineErrorResponse()
             {
                 success = false,
-                message = errorMessage
+                message = errorMessage,
+                statusCode = HttpStatusCode.NotFound
             };
         }
         
@@ -128,6 +132,7 @@ public class PipelineExecutor : IPipelineExecutor
             {
                 success = false,
                 message = "No response from model connector",
+                statusCode = HttpStatusCode.BadRequest
             };
         }
         else if(promptResponse.success == false)
@@ -137,7 +142,8 @@ public class PipelineExecutor : IPipelineExecutor
             {
                 success = false,
                 message = promptResponse.message,
-                errorCode = promptResponse.errorCode
+                errorCode = promptResponse.errorCode,
+                statusCode = HttpStatusCode.BadRequest
             };
         }
         else
