@@ -16,7 +16,7 @@ public static class MongoConfiguration
         MongoClientSettings? settings = null;
         if(floomEnvironment == "cloud")
         {
-            connectionString += "/?tls=true&tlsCAFile=global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false";
+            connectionString += "/?tls=true&tlsCAFile=Certificates/global-bundle.pem&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false";
             settings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
             settings.SslSettings = new SslSettings
             {
