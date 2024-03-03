@@ -10,6 +10,8 @@
 ![Version](https://img.shields.io/badge/version-1.1.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
+[![Floom Pipeline YAML](https://img.youtube.com/vi/SH7CY83eiY4/0.jpg)](https://www.youtube.com/watch?v=SH7CY83eiY4)
+
 </div>
 
 <p align="center">
