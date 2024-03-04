@@ -45,7 +45,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development",
         "FLOOM_ENVIRONMENT": "local",
         "FLOOM_DEPENDENCIES_PATH": "$(SolutionDir)Floom.Core/DLLs",
-        "FLOOM_AUTHENTICATION": "true",
+        "FLOOM_AUTHENTICATION": "false",
         "FLOOM_DATABASE_TYPE": "mongodb",
         "FLOOM_DB_USER":"root",
         "FLOOM_DB_PASSWORD":"MyFloom",
