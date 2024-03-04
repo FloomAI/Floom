@@ -11,7 +11,6 @@ namespace Floom.Plugins.Model.Connectors.Gemini;
 public class GeminiClient : IModelConnectorClient
 {
     private readonly ILogger _logger;
-    private readonly HttpClient _httpClient;
     public string? ApiKey { get; set; }
 
     public GeminiClient()
