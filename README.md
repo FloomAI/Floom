@@ -10,7 +10,7 @@
 ![Version](https://img.shields.io/badge/version-1.1.7-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<h2>Get started with our [Documentation](https://floom.ai/docs)!<h/>
+<h2>Get started with our <a href="https://floom.ai/docs">Documentation</a>!</h2>
 
 [![Floom Pipeline YAML](/ReadmeAssets/YouTube-Thumbnail.jpg)](https://www.youtube.com/watch?v=5boCgU-QvLI)
 
