@@ -9,31 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Floom.Plugins.Model.Connectors.LLamaCpp;
 
 public class LLamaCppClient : IModelConnectorClient
-{
-    // {  tinyllama 0.3
-    //     "pipelineId": "lama-pipeline",
-    //     "input": "<|im_start|>system You are a software engineer assistant, provide clear python code.<|im_end|><|im_start|>user Write python function to calculate Fibonacci numbers? Include only function code<|im_end|><|im_start|>"
-    // }
-    // 
-
-
-    // minichat-3b.q5_k_m.gguf
-    // {
-    //     "pipelineId": "lama-pipeline",
-    //     "input": "<s> [|System|] You are an AI assistant that follows instruction extremely well. Responses should be precise and short</s><s> [|User|]\n Who was the first USA president?</s>[|Assistant|]"
-    // }  
-    //
-    // { minichat
-    //     "pipelineId": "lama-pipeline",
-    //     "input": "<s> [|System|] </s><s> [|Input|]\n Write a python code to calculate Fibonacci numbers</s>[|Assistant|]"
-    // }
-
-    // mambagpt "### User:\n
-    // minichat "### Prompt:\n
-    // orcamini ###  Prompt:\n
-
-    // ORCA MINI
-    // ### System:\n \n\n### User:\n  Write a python code to calculate Fibonacci numbers\n\n### Response:\n 
+{ 
     public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string modelName)
     {
         var promptResponse = new FloomPromptResponse();

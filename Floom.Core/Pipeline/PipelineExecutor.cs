@@ -4,6 +4,7 @@ using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
 using Floom.Pipeline.StageHandler.Model;
 using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Plugin.Context;
 using Floom.Repository;
 using Floom.Utils;
 
@@ -21,11 +22,13 @@ public class PipelineExecutor : IPipelineExecutor
     private readonly IRepository<UserEntity> _usersRepository;
     private readonly IModelStageHandler _modelStageHandler;
     private readonly IPromptStageHandler _promptStageHandler;
-
+    private readonly IPluginContextCreator _pluginContextCreator;
+    
     public PipelineExecutor(
         IModelStageHandler modelStageHandler,
         IPromptStageHandler promptStageHandler,
-        IRepositoryFactory repositoryFactory, 
+        IRepositoryFactory repositoryFactory,
+        IPluginContextCreator pluginContextCreator,
         ILogger<PipelineExecutor> logger)
     {
         _logger = logger;
@@ -33,6 +36,7 @@ public class PipelineExecutor : IPipelineExecutor
         _usersRepository = repositoryFactory.Create<UserEntity>();
         _modelStageHandler = modelStageHandler;
         _promptStageHandler = promptStageHandler;
+        _pluginContextCreator = pluginContextCreator;
     }
 
     public async Task<FloomResponseBase> Execute(FloomRequest floomRequest)
@@ -102,7 +106,7 @@ public class PipelineExecutor : IPipelineExecutor
         }
         
         pipelineContext.Request = floomRequest;
-        pipelineContext.Pipeline = pipeline.ToModel();
+        pipelineContext.Pipeline = await pipeline.ToModel(_pluginContextCreator);
         
         // Status and CurrentStage needs to be changed to events
         pipelineContext.Status = PipelineExecutionStatus.InProgress;

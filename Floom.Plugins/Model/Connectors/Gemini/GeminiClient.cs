@@ -1,15 +1,19 @@
+using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using Floom.Base;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
 namespace Floom.Plugins.Model.Connectors.Gemini;
 
 public class GeminiClient : IModelConnectorClient
 {
+    readonly string MainUrl = "https://generativelanguage.googleapis.com/v1beta/models";
     private readonly ILogger _logger;
     public string? ApiKey { get; set; }
 
@@ -20,18 +24,22 @@ public class GeminiClient : IModelConnectorClient
 
     public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string model)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={ApiKey}";
-        var payload = new
+        var url = $"{MainUrl}/{model}:generateContent?key={ApiKey}";
+        
+        // Initialize the parts list with the user text by default
+        var partsList = new List<GeminiPart> { new GeminiPart { text = promptRequest.user } };
+
+        // If the system property exists, insert it as the first element of the parts list
+        if (!string.IsNullOrEmpty(promptRequest.system))
         {
-            contents = new[]
+            partsList.Insert(0, new GeminiPart { text = promptRequest.system });
+        }
+
+        var payload = new GeminiTextRequest()
+        {
+            contents = new GeminiContent
             {
-                new
-                {
-                    parts = new[]
-                    {
-                        new { text = promptRequest.user }
-                    }
-                }
+                parts = partsList
             }
         };
 
@@ -45,6 +53,10 @@ public class GeminiClient : IModelConnectorClient
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError($"Error generating text: {responseContent}");
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                {
+                    return new FloomPromptResponse { success = false, message = "Gemini model is overloaded. Please try again later", errorCode = ModelConnectorErrors.ModelOverloaded };
+                }
                 return new FloomPromptResponse { success = false, message = "Error generating text" };
             }
 
@@ -72,37 +84,125 @@ public class GeminiClient : IModelConnectorClient
     }
 
 
-    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings, string model)
     {
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/embedding-001:embedContent?key={ApiKey}";
-        var payload = new
+        var url = $"{MainUrl}/{model}:batchEmbedContents?key={ApiKey}";
+        var allEmbeddings = new List<List<float>>();
+
+        // Split strings into batches of 100
+        var googleApiMaxBatchSize = 100;
+        for (var i = 0; i < strings.Count; i += googleApiMaxBatchSize)
         {
-            model = "models/embedding-001",
-            content = new
+            var batch = strings.Skip(i).Take(googleApiMaxBatchSize).ToList();
+            var payload = new GeminiEmbeddingPayload
             {
-                parts = strings.Select(s => new { text = s }).ToArray()
+                requests = batch.Select(s => new GeminiEmbeddingRequest
+                {
+                    model = "models/" + model,
+                    content = new GeminiContent
+                    {
+                        parts = new List<GeminiPart> { new() { text = s } }
+                    }
+                }).ToList()
+            };
+
+            var serializedPayload = JsonSerializer.Serialize(payload, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var content = new StringContent(serializedPayload, Encoding.UTF8, "application/json");
+
+            using (var httpClient = new HttpClient())
+            {
+                var response = await httpClient.PostAsync(url, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogError($"Error generating embeddings in batch starting with index {i}: {responseContent}");
+                    // Consider how to handle partial failures - for simplicity, we're continuing here
+                    continue;
+                }
+
+                var result = JsonSerializer.Deserialize<GeminiGenerateEmbeddingsResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                if (result != null && result.Embeddings != null)
+                {
+                    allEmbeddings.AddRange(result.Embeddings.Select(e => e.Values).ToList());
+                }
             }
-        };
+        }
 
-        var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
-
-        using (var httpClient = new HttpClient())
+        if (allEmbeddings.Count == 0)
         {
-            var response = await httpClient.PostAsync(url, content);
+            return FloomOperationResult<List<List<float>>>.CreateFailure("Error generating all embeddings");
+        }
+
+        return FloomOperationResult<List<List<float>>>.CreateSuccessResult(allEmbeddings);
+    }
+
+    public async Task<IActionResult> ValidateModelAsync(string model)
+    {
+        _logger.LogInformation("ValidateModelAsync");
+        var url = $"{MainUrl}?key={ApiKey}";
+        
+        using (HttpClient client = new HttpClient())
+        {
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            // Call the API and get the response
+            HttpResponseMessage response = await client.GetAsync(url);
+
+            var responseCode = response.StatusCode;
+
+            if (responseCode == HttpStatusCode.Unauthorized)
+            {
+                _logger.LogError("Unable to authenticate to Gemini");
+                return new BadRequestObjectResult(new
+                    { Message = $"OpenAI: Unable to authenticate", ErrorCode = ModelConnectorErrors.InvalidApiKey });
+            }
+
+            if (responseCode == HttpStatusCode.NotFound)
+            {
+                _logger.LogError("Invalid model name " + model);
+                return new BadRequestObjectResult(new
+                    { Message = $"Gemini: Invalid model name", ErrorCode = ModelConnectorErrors.InvalidApiKey });
+            }
+            
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
+            if (response.StatusCode == HttpStatusCode.OK)
             {
-                _logger.LogError($"Error generating embeddings: {responseContent}");
-                return FloomOperationResult<List<List<float>>>.CreateFailure("Error generating embeddings");
+                var modelsResponse = JsonSerializer.Deserialize<ModelsResponse>(responseContent, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                var modelExists = modelsResponse?.Models?.Any(m => m.Name.Equals($"models/{model}", StringComparison.OrdinalIgnoreCase)) ?? false;
+
+                if (!modelExists)
+                {
+                    _logger.LogError("Invalid model name " + model);
+                    return new BadRequestObjectResult(new
+                        { Message = $"Invalid model name: {model}", ErrorCode = ModelConnectorErrors.InvalidModelName });
+                }
+
+                _logger.LogInformation("Model valid");
+                return new OkObjectResult(new { Message = "Model valid" });
             }
 
-            var result = JsonSerializer.Deserialize<GeminiGenerateEmbeddingsResponse>(responseContent);
-
-            var embeddings = result.Embeddings.Select(e => e.Vector).ToList();
-            return FloomOperationResult<List<List<float>>>.CreateSuccessResult(embeddings);
+            // Handle other status codes appropriately
+            return new BadRequestObjectResult(new
+                { Message = "Failed to validate model due to an unexpected error", ErrorCode = ModelConnectorErrors.UnexpectedError });
         }
     }
+}
+
+public class GeminiTextRequest
+{
+    public GeminiContent contents { get; set; }
+}
+
+public class ModelsResponse
+{
+    public List<ModelInfo> Models { get; set; }
+}
+
+public class ModelInfo
+{
+    public string Name { get; set; }
 }
 
 // Example response classes, adjust these according to the actual JSON structure of the API responses
@@ -142,12 +242,33 @@ public class PromptFeedback
     public List<SafetyRating> SafetyRatings { get; set; }
 }
 
+public class GeminiEmbeddingPayload
+{
+    public List<GeminiEmbeddingRequest> requests { get; set; } = new();
+}
+
+public class GeminiEmbeddingRequest
+{
+    public string? model { get; set; }
+    public GeminiContent content { get; set; }
+}
+
+public class GeminiContent
+{
+    public List<GeminiPart>? parts { get; set; }
+}
+
+public class GeminiPart
+{
+    public string? text { get; set; }
+}
+
 public class GeminiGenerateEmbeddingsResponse
 {
-    public List<Embedding> Embeddings { get; set; }
+    public List<GeminiEmbedding> Embeddings { get; set; }
 
-    public class Embedding
+    public class GeminiEmbedding
     {
-        public List<float> Vector { get; set; }
+        public List<float> Values { get; set; }
     }
 }

@@ -1,6 +1,5 @@
 using Floom.Pipeline;
 using Floom.Pipeline.Entities;
-using Floom.Plugin;
 using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
 using Floom.Plugin.Manifest;
@@ -162,12 +161,14 @@ public class EventsManager
                     var pluginConfiguration = PipelineHelper.GetPluginConfigurationInPipeline(pluginPackage, pipeline);
                     var pluginContext = await _pluginContextCreator.Create(pluginConfiguration);
                     var plugin = _pluginLoader.LoadPlugin(pluginPackage);
+
+                    var pipelineModel = await pipeline.ToModel(_pluginContextCreator);
                     
                     var pipelineContext = new PipelineContext()
                     {
                         PipelineName = pipeline.name,
                         Status = PipelineExecutionStatus.Events,
-                        Pipeline = pipeline.ToModel()
+                        Pipeline = pipelineModel
                     };
                     plugin?.HandleEvent(eventName, pluginContext, pipelineContext);
                     break;

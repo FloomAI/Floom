@@ -1,4 +1,7 @@
 ﻿using Floom.Logs;
+using Floom.Plugins.Prompt.Context.Embeddings;
+using Floom.Plugins.Prompt.Context.Embeddings.Gemini;
+using Floom.Plugins.Prompt.Context.Embeddings.OpenAi;
 using IO.Milvus;
 using IO.Milvus.Client;
 using IO.Milvus.Client.gRPC;
@@ -50,8 +53,8 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
                 new[]
                 {
                     FieldType.Create("object_id", MilvusDataType.Int64, isPrimaryKey: true, autoId: true), //row ID
-                    FieldType.CreateVarchar("section_id", 30), //page//paragrpah//whatever
-                    FieldType.CreateVarchar("text", 4000), //metadata text
+                    FieldType.CreateVarchar("section_id", 30),
+                    FieldType.CreateVarchar("text", 4000),
                     FieldType.CreateFloatVector("text_vectors", dimension),
                 }
             );
@@ -100,18 +103,23 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
             List<string> allSectionVectorsIds = sectionVectors.Select(s => s.id).ToList();
             List<string> allSectionVectorsText = sectionVectors.Select(s => s.text).ToList();
 
-            //string partitionName = "";//"novel";//Donnot Use partition name when you are connecting milvus hosted by zilliz cloud.
-
-            MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
-                new Field[]
-                {
-                    //Field.Create("object_id",bookIds),
-                    Field.Create("section_id", allSectionVectorsIds),
-                    Field.Create("text", allSectionVectorsText),
-                    Field.CreateFloatVector("text_vectors", allSectionVectorsValues),
-                }
-            );
-
+            try
+            {
+                MilvusMutationResult result = await milvusClient.InsertAsync(collectionName,
+                    new Field[]
+                    {
+                        Field.Create("section_id", allSectionVectorsIds),
+                        Field.Create("text", allSectionVectorsText),
+                        Field.CreateFloatVector("text_vectors", allSectionVectorsValues),
+                    }
+                );
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "InsertVectors Error");
+                return false;
+            }
+            
             return true;
         }
 
@@ -198,12 +206,12 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
                 { Message = $"Milvus Connection Failed", ErrorCode = VectorStoreErrors.ConnectionFailed });
         }
 
-        public override async Task Prepare()
+        public override async Task Prepare(uint vectorsDimension)
         {
             _logger.LogInformation("Prepare");
             // //Index name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character
             // string collectionName = $"fp_{dataDto.id.ToLower().Replace("-", "_")}"; //TODO: regex this shit in validator of dataset name
-
+            
             try
             {
                 //Check if index exists
@@ -213,7 +221,7 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
                     await DeleteCollection(CollectionName);
                 }
 
-                await CreateCollection(CollectionName, 1536);
+                await CreateCollection(CollectionName, vectorsDimension);
 
                 await CreateIndex(CollectionName);
 
@@ -237,18 +245,25 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
                 {
                     id = $"page{page}",
                     values = embeddingsVectors[page],
-                    text = chunks[page] //TODO: SHOULD TRIM IN Milvus to max varchar length
+                    text = chunks[page]
                 });
             }
 
-            //Push Vectors (By Batches)
+            // Push Vectors (By Batches)
             for (int i = 0; i < vectors.Count; i += batchSize)
             {
                 // Get the current batch
                 var batch = vectors.Skip(i).Take(batchSize).ToList();
-                _logger.LogInformation($"CreateAndInsertVectors Inserting {batchSize} vectors, batch {i} of {vectors.Count}");
                 // Push Vectors
-                await InsertVectors(CollectionName, batch);
+                var result = await InsertVectors(CollectionName, batch);
+                if (result)
+                {
+                    _logger.LogInformation($"CreateAndInsertVectors Inserting {batchSize} vectors, batch {i+1} of {vectors.Count}");
+                }
+                else
+                {
+                    _logger.LogError($"CreateAndInsertVectors Error Inserting {batchSize} vectors, batch {i+1} of {vectors.Count}");
+                }
             }
         }
     }

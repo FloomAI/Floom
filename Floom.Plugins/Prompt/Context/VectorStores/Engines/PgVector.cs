@@ -1,4 +1,5 @@
 using Floom.Logs;
+using Floom.Plugins.Prompt.Context.Embeddings;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -54,7 +55,7 @@ public class PgVector : VectorStoreProvider
             { Message = $"PgVector Connection Failed", ErrorCode = VectorStoreErrors.ConnectionFailed });
     }
 
-    public override async Task Prepare()
+    public override async Task Prepare(uint vectorDimension)
     {
         var pipelineId = CollectionName;
         var dataSourceBuilder = new NpgsqlDataSourceBuilder(GetConnectionString());

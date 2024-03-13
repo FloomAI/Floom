@@ -38,6 +38,11 @@ services:
       - FLOOM_ENVIRONMENT=local
       - FLOOM_AUTHENTICATION=false
       - FLOOM_DATABASE_TYPE=mongodb
+      - FLOOM_VDB_VENDOR=Milvus
+      - FLOOM_VDB_ENDPOINT=standalone
+      - FLOOM_VDB_PORT=19530
+      - FLOOM_VDB_USERNAME=root
+      - FLOOM_VDB_PASSWORD=Milvus
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/floom:/app/logs
     healthcheck:

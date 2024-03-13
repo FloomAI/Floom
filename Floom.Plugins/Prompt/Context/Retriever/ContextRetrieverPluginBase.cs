@@ -1,6 +1,5 @@
 using Floom.Assets;
 using Floom.Audit;
-using Floom.Data;
 using Floom.Pipeline;
 using Floom.Pipeline.StageHandler.Prompt;
 using Floom.Plugin.Base;
@@ -17,7 +16,9 @@ namespace Floom.Plugins.Prompt.Context.Retriever;
 public abstract class ContextRetrieverPluginBase : FloomPluginBase
 {
     private ContextRetrieverPluginConfigBase _config;
-
+    private VectorStoreConfiguration? _vectorStore { get; set; }
+    private EmbeddingsProvider? _embeddingsProvider { get; set; }
+    
     public ContextRetrieverPluginBase()
     {
     }
@@ -31,32 +32,10 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
         // Initialize settings with specific plugin settings class
         _config = new ContextRetrieverPluginConfigBase(context.Configuration.Configuration);
-        
-        // check whether plugin configuration provides embeddings and vector store settings
-        if(_config.VectorStore == null)
-        {
-            // Try to get Env Var Vector Store configurations
-            _config.VectorStore = VectorStoreConfiguration.GetEnvVarVectorStoreConfiguration();
-            
-            // in case no vector store config is found, get the default configurations from the plugin manifest
-            if(_config.VectorStore == null)
-            {
-                if (context.Manifest.Parameters.TryGetValue("vectorStore", out var vectorstore))
-                {
-                    _config.VectorStore = new VectorStoreConfiguration(vectorstore.DefaultValue);
-                }
-            }
-        }
-
-        if (_config.Embeddings == null)
-        {
-            if (context.Manifest.Parameters.TryGetValue("embeddings", out var embeddings))
-            {
-                _config.Embeddings = new EmbeddingsConfiguration(embeddings.DefaultValue);
-            }
-        }
+        // Get Vector Store settings from environment variables
+        _vectorStore = VectorStoreConfiguration.GetEnvVarVectorStoreConfiguration();
     }
-
+    
     public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
     {
         _logger.LogInformation($"Executing ContextRetrieverPlugin {pluginContext.Package}");
@@ -68,8 +47,8 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         //Iterate Data
         #region Get Query Embeddings
 
-        EmbeddingsProvider? embeddingsProvider = GetEmbeddingsProvider(pipelineContext, _config.Embeddings);
-
+        EmbeddingsProvider? embeddingsProvider = GetEmbeddingsProvider(pipelineContext);
+        
         var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(new List<string>()
         {
             pipelineContext.Request.prompt
@@ -93,10 +72,10 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
         _logger.LogInformation("Running Similarity Search");
 
-        if (_config.VectorStore != null)
+        if (_vectorStore != null)
         {
-            var vectorStoreProvider = VectorStoresFactory.Create(_config.VectorStore);
-            vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext.PipelineName, pipelineContext.Pipeline.UserId);
+            var vectorStoreProvider = VectorStoresFactory.Create(_vectorStore);
+            vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext);
             List<VectorSearchResult> results = await vectorStoreProvider.Search(
                 queryEmbeddings.First(),
                 topResults: 3
@@ -138,8 +117,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
         _logger.LogInformation($"Handling event {EventName} for plugin {pluginContext.Package}");
         
-        var actionResult = await GenerateAndStoreEmbeddingsFromFile(pipelineContext, _config.AssetsIds, _config.VectorStore,
-            _config.Embeddings);
+        var actionResult = await GenerateAndStoreEmbeddingsFromFile(pipelineContext, _config.AssetsIds, _vectorStore);
         
         if (actionResult is OkResult)
         {
@@ -151,21 +129,37 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         }
     }
     
-    private EmbeddingsProvider GetEmbeddingsProvider(PipelineContext pipelineContext, EmbeddingsConfiguration embeddingsConfiguration)
+    private EmbeddingsProvider? GetEmbeddingsProvider(PipelineContext pipelineContext)
     {
-        EmbeddingsProvider? embeddingsProvider = null;
-        
-        foreach (var pipelineModelConnector in pipelineContext.Pipeline.Model)
+        if(_embeddingsProvider == null)
         {
-            if(pipelineModelConnector.Package == "floom/model/connector/openai")
+            foreach (var modelConnectorPluginContext in pipelineContext.Pipeline.Model)
             {
-                var modelApiKey = pipelineModelConnector.Configuration["apikey"] as string;
-                embeddingsProvider = EmbeddingsFactory.Create(embeddingsConfiguration.Vendor, modelApiKey, _config.Embeddings.Model);
-                break;
+                var modelConnectorParams = modelConnectorPluginContext.Configuration.Configuration;
+                modelConnectorParams.TryGetValue("apikey", out var modelApiKey);
+                modelConnectorParams.TryGetValue("embeddingsModel", out var embeddingsModel);
+                var modelApiKeyString =  modelApiKey as string;
+                var embeddingsModelString = embeddingsModel as string;
+                if(embeddingsModelString == null && modelConnectorPluginContext.Manifest != null)
+                {
+                    modelConnectorPluginContext.Manifest.Parameters.TryGetValue("embeddingsModel", out var embeddingsModelParameter);
+                    var embeddingsModelDefaultValue = embeddingsModelParameter.DefaultValue as Dictionary<object, object>;
+                    embeddingsModelString = embeddingsModelDefaultValue["value"] as string;
+                }
+                var modelConnectorPackage = modelConnectorPluginContext.Package;
+                // get vendor by the name after the 'connector'
+                // for example, if the package is 'floom/model/connector/openai', then the vendor is 'openai'
+                var modelConnectorVendor = modelConnectorPackage.Split("/").Last();
+                _embeddingsProvider = EmbeddingsFactory.Create(modelConnectorVendor, modelApiKeyString, embeddingsModelString);
             }
         }
 
-        return embeddingsProvider;
+        if (_embeddingsProvider == null)
+        {
+            _logger.LogError("Embeddings configuration is not available for pipeline's model connector plugin");
+        }
+        
+        return _embeddingsProvider;
     }
         
     // Change Execute to receive:
@@ -176,14 +170,14 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
     private async Task<IActionResult> GenerateAndStoreEmbeddingsFromFile(
         PipelineContext pipelineContext,
         List<string> assetsIds,
-        VectorStoreConfiguration vectorStoreConfiguration,
-        EmbeddingsConfiguration embeddingsConfiguration)
+        VectorStoreConfiguration vectorStoreConfiguration)
     {
         _logger.LogInformation($"Preparing for generating and storing embeddings");
-
+        var embeddingsProvider = GetEmbeddingsProvider(pipelineContext);
         var vectorStoreProvider = VectorStoresFactory.Create(vectorStoreConfiguration);
-        vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext.PipelineName, pipelineContext.Pipeline.UserId);
-        await vectorStoreProvider.Prepare();
+        
+        vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext);
+        await vectorStoreProvider.Prepare(EmbeddingsDimensionResolver.GetDimension(embeddingsProvider));
         var splitText = new List<string>();
         var embeddingsVectors = new List<List<float>>();
 
@@ -239,6 +233,9 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
             var pagesContent = await ParseFile(fileBytes, extractionMethod, maxCharactersPerItem: null);
             
+            // remove any empty strings or have " "
+            pagesContent = pagesContent.Where(x => !IsNullOrWhiteSpace(x)).ToList();
+            
             splitText.AddRange(pagesContent);
             
             #endregion
@@ -250,7 +247,6 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         
             _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors");
 
-            var embeddingsProvider = GetEmbeddingsProvider(pipelineContext, embeddingsConfiguration);
         
             _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
         

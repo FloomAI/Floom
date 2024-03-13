@@ -1,9 +1,15 @@
+using Floom.Pipeline;
+
 namespace Floom.Plugins.Prompt.Context.VectorStores;
 
 public static class Utils
 {
-    public static string GetCollectionName(string pipelineName, string userId)
+    public static string GetCollectionName(PipelineContext pipelineContext)
     {
-        return $"pipeline-{pipelineName}_user-{userId}".Replace("-", "_").ToLower();
+        var pipelineName = pipelineContext.PipelineName;
+        var pipelineId = string.IsNullOrEmpty(pipelineContext.Pipeline.UserId)
+            ? pipelineContext.Pipeline.Id
+            : pipelineContext.Pipeline.UserId;
+        return $"pipeline_{pipelineName}_uid_{pipelineId}".Replace("-", "_").ToLower();
     }
 }

@@ -12,7 +12,7 @@
     model:
       type: string
       description: Declare OpenAI model
-      default: davinci
+      default: "gpt-3.5-turbo"
     apiKey:
       type: string
       description: OpenAI Api Key
@@ -20,9 +20,59 @@
       type: string
       description: Voice to use for the Text to speech response
       default: "alloy"
+    embeddingsModel:
+      type: string
+      description: OpenAI Embeddings model
+      default: "text-embedding-ada-002"
   owner:
     name: floom
 
+- name: Gemini Model Connector
+  runtime: csharp
+  description: Connect to Gemini LLM, provides an inference interface
+  package: floom/model/connector/gemini
+  version: '0.1'
+  supportedFloomVersions:
+    - '1.0'
+  supportedStages:
+    - model.connector
+  events:
+  parameters:
+    model:
+      type: string
+      description: Declare Gemini model
+      default: "gemini-pro"
+    apiKey:
+      type: string
+      description: Gemini Api Key
+    embeddingsModel:
+      type: string
+      description: Gemini Embeddings model
+      default: "embedding-001"
+  owner:
+    name: floom
+
+- name: Anthropic Model Connector
+  runtime: csharp
+  description: Connect to Anthropic LLM
+  package: floom/model/connector/anthropic
+  version: '0.1'
+  supportedFloomVersions:
+    - '1.0'
+  supportedStages:
+    - model.connector
+  events:
+  parameters:
+    model:
+      type: string
+      description: Declare Anthropic model
+      default: "claude-3-sonnet-20240229"
+    apiKey:
+      type: string
+      description: Anthropic Api Key
+  owner:
+    name: floom
+    
 - name: Ollama Model Connector
   runtime: csharp
   description: Connect to Ollama LLM
@@ -75,41 +125,6 @@
     assetId:
       type: string
       description: Floom Asset ID of the PDF document
-    vectorStore:
-      type: dictionary
-      description: Vector store to store the PDF context
-      default:
-        vendor: "Milvus"
-        endpoint: "localhost"
-        port: "19530"
-        username: "root"
-        password: "Milvus"
-      keys:
-        vendor:
-          type: string
-          description: Vector store vendor
-        endpoint:
-          type: string
-          description: Vector store endpoint (including port)
-        username:
-          type: string
-          description: Key of the vector store
-        password:
-          type: string
-          description: Key of the vector store
-    embeddings: 
-      type: dictionary
-      description: Embeddings to use for the PDF context
-      default:
-        vendor: "openai"
-        model: "text-embedding-ada-002"
-      keys:
-        vendor:
-          type: string
-          description: Embeddings vendor
-        model:
-          type: string
-          description: Embeddings model
   owner:
     name: floom
 
@@ -131,41 +146,6 @@
     assetId:
       type: string
       description: Floom Asset ID of the Docx document
-    vectorStore:
-      type: dictionary
-      description: Vector store to store the Docx context
-      default:
-        vendor: "Milvus"
-        endpoint: "localhost"
-        port: "19530"
-        username: "root"
-        password: "Milvus"
-      keys:
-        vendor:
-          type: string
-          description: Vector store vendor
-        endpoint:
-          type: string
-          description: Vector store endpoint (including port)
-        username:
-          type: string
-          description: Key of the vector store
-        password:
-          type: string
-          description: Key of the vector store
-    embeddings:
-      type: dictionary
-      description: Embeddings to use for the Docx context
-      default:
-        vendor: "openai"
-        model: "text-embedding-ada-002"
-      keys:
-        vendor:
-          type: string
-          description: Embeddings vendor
-        model:
-          type: string
-          description: Embeddings model
   owner:
     name: floom
 
@@ -187,41 +167,6 @@
     assetId:
       type: string
       description: Floom Asset ID of the PPTX document
-    vectorStore:
-      type: dictionary
-      description: Vector store to store the PPTX context
-      default:
-        vendor: "Milvus"
-        endpoint: "localhost"
-        port: "19530"
-        username: "root"
-        password: "Milvus"
-      keys:
-        vendor:
-          type: string
-          description: Vector store vendor
-        endpoint:
-          type: string
-          description: Vector store endpoint (including port)
-        username:
-          type: string
-          description: Key of the vector store
-        password:
-          type: string
-          description: Key of the vector store
-    embeddings:
-      type: dictionary
-      description: Embeddings to use for the PPTX context
-      default:
-        vendor: "openai"
-        model: "text-embedding-ada-002"
-      keys:
-        vendor:
-          type: string
-          description: Embeddings vendor
-        model:
-          type: string
-          description: Embeddings model
   owner:
     name: floom
 
@@ -243,41 +188,6 @@
     assetId:
       type: string
       description: Floom Asset ID of the TXT document
-    vectorStore:
-      type: dictionary
-      description: Vector store to store the TXT context
-      default:
-        vendor: "Milvus"
-        endpoint: "localhost"
-        port: "19530"
-        username: "root"
-        password: "Milvus"
-      keys:
-        vendor:
-          type: string
-          description: Vector store vendor
-        endpoint:
-          type: string
-          description: Vector store endpoint (including port)
-        username:
-          type: string
-          description: Key of the vector store
-        password:
-          type: string
-          description: Key of the vector store
-    embeddings:
-      type: dictionary
-      description: Embeddings to use for the TXT context
-      default:
-        vendor: "openai"
-        model: "text-embedding-ada-002"
-      keys:
-        vendor:
-          type: string
-          description: Embeddings vendor
-        model:
-          type: string
-          description: Embeddings model
   owner:
     name: floom
     
