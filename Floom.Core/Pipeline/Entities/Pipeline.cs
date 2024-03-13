@@ -1,4 +1,5 @@
 using Floom.Plugin.Base;
+using Floom.Plugin.Context;
 
 namespace Floom.Pipeline.Entities;
 
@@ -8,7 +9,7 @@ public class Pipeline
     public string Name { get; set; }
     public string Kind { get; set; }
     public string UserId { get; set; }
-    public IEnumerable<PluginConfiguration>? Model { get; set; }
+    public IEnumerable<PluginContext>? Model { get; set; }
     public PromptStage? Prompt { get; set; }
     public ResponseStage? Response { get; set; }
     public IEnumerable<PluginConfiguration>? Global { get; set; }

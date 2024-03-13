@@ -50,7 +50,12 @@
         "FLOOM_DB_USER":"root",
         "FLOOM_DB_PASSWORD":"MyFloom",
         "FLOOM_DB_ADDRESS":"localhost:4060",
-        "FLOOM_S3_BUCKET":"floom-private-user-files"
+        "FLOOM_S3_BUCKET":"floom-private-user-files",
+        "FLOOM_VDB_VENDOR": "Milvus",
+        "FLOOM_VDB_ENDPOINT": "localhost",
+        "FLOOM_VDB_PORT": "19530",
+        "FLOOM_VDB_USERNAME": "root",
+        "FLOOM_VDB_PASSWORD": "Milvus"
       }
     }
   }

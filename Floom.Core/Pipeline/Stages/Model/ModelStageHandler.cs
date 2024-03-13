@@ -44,17 +44,15 @@ public class ModelStageHandler : IModelStageHandler
         {
             _logger.LogInformation("Model Stage: Handling model connector.");
             
-            foreach (var modelPluginConfiguration in pipelineContext.Pipeline.Model)
+            foreach (var modelConnectorPluginContext in pipelineContext.Pipeline.Model)
             {
-                var connectorPlugin = PluginLoader.LoadPlugin(modelPluginConfiguration.Package);
+                var connectorPlugin = PluginLoader.LoadPlugin(modelConnectorPluginContext.Package);
                 
                 if(connectorPlugin != null)
                 {
-                    var pluginContext = await PluginContextCreator.Create(modelPluginConfiguration);
+                    connectorPlugin.Initialize(modelConnectorPluginContext);
                     
-                    connectorPlugin.Initialize(pluginContext);
-                    
-                    var pluginResult = await connectorPlugin.Execute(pluginContext, pipelineContext);
+                    var pluginResult = await connectorPlugin.Execute(modelConnectorPluginContext, pipelineContext);
                     
                     pipelineContext.AddEvent(new ModelConnectorResultEvent
                     {
@@ -63,7 +61,7 @@ public class ModelStageHandler : IModelStageHandler
                 }
                 else
                 {
-                    _logger.LogError("Error loading model connector plugin: {Package}", modelPluginConfiguration.Package);
+                    _logger.LogError("Error loading model connector plugin: {Package}", modelConnectorPluginContext.Package);
                 }
             }
         }

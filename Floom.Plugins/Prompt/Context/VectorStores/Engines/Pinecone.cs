@@ -183,7 +183,7 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
             }
         }
 
-        public override async Task Prepare()
+        public override async Task Prepare(uint vectorDimension)
         {
             try
             {
@@ -195,7 +195,7 @@ namespace Floom.Plugins.Prompt.Context.VectorStores.Engines
                 }
                 else //Not exists, create it
                 {
-                    await CreateIndex(CollectionName, 1536, Metric.Cosine);
+                    await CreateIndex(CollectionName, vectorDimension, Metric.Cosine);
                 }
             }
             catch (Exception e)

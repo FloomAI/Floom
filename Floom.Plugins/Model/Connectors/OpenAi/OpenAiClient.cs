@@ -189,7 +189,7 @@ public class OpenAiClient : IModelConnectorClient
         return new OkObjectResult(new { Message = $"Model valid" });
     }
 
-    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
+    public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings, string model)
     {
         List<List<float>> pagesEmbeddings = new List<List<float>>();
 
@@ -202,7 +202,7 @@ public class OpenAiClient : IModelConnectorClient
             OpenAiEmbeddings.EmbeddingRequest request = new OpenAiEmbeddings.EmbeddingRequest
             {
                 input = strings,
-                model = "text-embedding-ada-002"
+                model = model
             };
 
             string requestBody = JsonSerializer.Serialize(request);
@@ -212,13 +212,6 @@ public class OpenAiClient : IModelConnectorClient
             _logger.LogInformation("Calling OpenAI embeddings API {0}", $"{MainUrl}embeddings");
             HttpResponseMessage response = await client.PostAsync($"{MainUrl}embeddings", content);
             
-            if (response.StatusCode == HttpStatusCode.InternalServerError)
-            {
-                var errorMessage = $"Error while receiving response from OpenAI. Status Code: {response.StatusCode}";
-                _logger.LogError(errorMessage);
-                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
-            }
-
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
                 var errorMessage = "Error while receiving response from OpenAI, too many requests";
@@ -229,6 +222,13 @@ public class OpenAiClient : IModelConnectorClient
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 var errorMessage = "Unable to authenticate to OpenAI";
+                _logger.LogError(errorMessage);
+                return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
+            }
+
+            if (response.StatusCode == HttpStatusCode.InternalServerError || !response.IsSuccessStatusCode)
+            {
+                var errorMessage = $"Error while receiving response from OpenAI. Status Code: {response.StatusCode}";
                 _logger.LogError(errorMessage);
                 return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
             }

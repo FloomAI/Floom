@@ -1,5 +1,6 @@
 using Floom.Pipeline.Entities.Dtos;
 using Floom.Plugin.Base;
+using Floom.Plugin.Context;
 using Floom.Utils;
 
 namespace Floom.Pipeline.Entities;
@@ -56,7 +57,7 @@ public static class PipelineMapper
             Configuration = MongoUtils.ConvertBsonDocumentToDictionary(pluginConfigurationEntity.configuration)
         };
     }
-
+    
     private static PipelineEntity.PromptStageEntity ToEntity(this PipelineDto.PromptStageDto prompt)
     {
         var promptStageEntity = new PipelineEntity.PromptStageEntity();
@@ -144,7 +145,7 @@ public static class PipelineMapper
         return responseStage;
     }
     
-    public static Pipeline ToModel(this PipelineEntity pipelineEntity)
+    public static async Task<Pipeline> ToModel(this PipelineEntity pipelineEntity, IPluginContextCreator pluginContextCreator)
     {
         var pipeline = new Pipeline
         {
@@ -156,7 +157,9 @@ public static class PipelineMapper
         
         if (pipelineEntity.model != null)
         {
-            pipeline.Model = pipelineEntity.model.Select(m => m.ToModel()).ToList();
+            var tasks = pipelineEntity.model.Select(m => pluginContextCreator.Create(m.ToModel()));
+            var results = await Task.WhenAll(tasks);
+            pipeline.Model = results;
         }
         
         if (pipelineEntity.prompt != null)

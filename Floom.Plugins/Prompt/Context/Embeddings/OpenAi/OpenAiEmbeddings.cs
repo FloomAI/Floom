@@ -27,7 +27,7 @@ public class OpenAiEmbeddings : EmbeddingsProvider
     public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings)
     {
         _logger.LogInformation("GetEmbeddingsAsync");
-        return await _openAiClient.GetEmbeddingsAsync(strings);
+        return await _openAiClient.GetEmbeddingsAsync(strings, Model);
     }
 
     public async Task<IActionResult> ValidateModelAsync()

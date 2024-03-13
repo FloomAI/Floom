@@ -1,3 +1,4 @@
+using Floom.Plugins.Prompt.Context.Embeddings.Gemini;
 using Floom.Plugins.Prompt.Context.Embeddings.Ollama;
 using Floom.Plugins.Prompt.Context.Embeddings.OpenAi;
 
@@ -15,6 +16,25 @@ public static class EmbeddingsFactory
 
                 if (provider == null)
                     throw new Exception("OpenAiEmbeddings not found in DI container");
+
+                if (apiKey != null)
+                {
+                    provider.SetApiKey(apiKey);
+                }
+
+                if (model != null)
+                {
+                    provider.Model = model;
+                }
+
+                return provider;
+            }
+            case "gemini":
+            {
+                var provider = new GeminiEmbeddings();
+
+                if (provider == null)
+                    throw new Exception("GeminiEmbeddings not found in DI container");
 
                 if (apiKey != null)
                 {

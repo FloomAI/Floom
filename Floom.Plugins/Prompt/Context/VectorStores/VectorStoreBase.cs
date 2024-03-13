@@ -1,3 +1,4 @@
+using Floom.Plugins.Prompt.Context.Embeddings;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Plugins.Prompt.Context.VectorStores
@@ -9,7 +10,7 @@ namespace Floom.Plugins.Prompt.Context.VectorStores
 
         public abstract Task<IActionResult> HealthCheck();
 
-        public abstract Task Prepare();
+        public abstract Task Prepare(uint vectorDimension);
 
         public abstract Task CreateAndInsertVectors(List<string> chunks, List<List<float>> embeddings);
 
