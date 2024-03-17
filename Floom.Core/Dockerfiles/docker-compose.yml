@@ -51,7 +51,7 @@ services:
         timeout: 10s
         retries: 2
     ports:
-      - "4050:80"
+      - "4050:4050"
     depends_on:
       mongo:
         condition: service_healthy

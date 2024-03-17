@@ -29,6 +29,7 @@ services:
   
   floom:
     container_name: floom
+    image: floomai/floom:v3.0.1
     build:
       context: .
       dockerfile: Dockerfile
@@ -37,6 +38,14 @@ services:
       - FLOOM_DB_USER=root
       - FLOOM_DB_PASSWORD=MyFloom
       - FLOOM_DEPENDENCIES_PATH=./DLLs
+      - FLOOM_ENVIRONMENT=local
+      - FLOOM_AUTHENTICATION=false
+      - FLOOM_DATABASE_TYPE=mongodb
+      - FLOOM_VDB_VENDOR=Milvus
+      - FLOOM_VDB_ENDPOINT=standalone
+      - FLOOM_VDB_PORT=19530
+      - FLOOM_VDB_USERNAME=root
+      - FLOOM_VDB_PASSWORD=Milvus
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/floom:/app/logs
     healthcheck:
@@ -45,7 +54,7 @@ services:
       timeout: 10s
       retries: 2
     ports:
-      - "4050:80"
+      - "4050:4050"
     depends_on:
       - "mongo"
   
