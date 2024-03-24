@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -8,6 +7,7 @@ using Floom.Base;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugins.Prompt.Context.Embeddings.Ollama;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -38,13 +38,10 @@ public class OllamaClient : IModelConnectorClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
     
-    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest prompt, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest prompt, string model)
     {
-        var promptResponse = new FloomPromptResponse();
-
-        var swPrompt = new Stopwatch();
-        swPrompt.Start();
-
+        var result = new ModelConnectorResult();
+        
         using (var client = new HttpClient())
         {
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -61,32 +58,21 @@ public class OllamaClient : IModelConnectorClient
                     { "top_p", 0.95 }
                 }
             };
-
-            //Add messages
-
-            //Add History (System+User+Assistant)
-
-            //If history empty OR first in history not system
-            if (prompt.previousMessages.Count == 0 || prompt.previousMessages.First().role != "system")
+            
+            if (prompt.Prompt.SystemPrompt != null)
             {
-                //take system from prompt
-                if (prompt.system != null)
-                {
-                    generateTextRequestMessage.prompt = prompt.system;
-                }
+                generateTextRequestMessage.prompt = prompt.Prompt.SystemPrompt;
             }
-
-            //Add all messages
-            foreach (FloomPromptMessage promptMessage in prompt.previousMessages)
+            
+            if (prompt.Context.Context != null)
             {
-                generateTextRequestMessage.prompt += promptMessage.content + "\n";
+                generateTextRequestMessage.prompt += prompt.Context.Context + "\n";
             }
-
-            //dd
+            
             //Add User
-            if (prompt.user != null)
+            if (prompt.Prompt.UserPrompt != null)
             {
-                generateTextRequestMessage.prompt += "\n" + prompt.user;
+                generateTextRequestMessage.prompt += "\n" + prompt.Prompt.UserPrompt;
             }
 
             var requestBody = JsonSerializer.Serialize(generateTextRequestMessage);
@@ -106,25 +92,15 @@ public class OllamaClient : IModelConnectorClient
             }
 
             //Fill Response
-            promptResponse = new FloomPromptResponse()
+            result.Success = true;
+            result.Data = new ResponseValue()
             {
-                success = true,
-                elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
+                type = DataType.String,
+                value = chatResponse.response
             };
-
-            //Add all choices
-            promptResponse.values.Add(
-                new ResponseValue()
-                {
-                    type = DataType.String,
-                    value = chatResponse.response
-                }
-            );
         }
-
-        swPrompt.Stop();
-
-        return promptResponse;
+        
+        return result;
     }
 
     public async Task<IActionResult> ValidateModelAsync(string model)

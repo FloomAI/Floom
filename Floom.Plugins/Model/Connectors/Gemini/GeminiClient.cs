@@ -6,6 +6,7 @@ using Floom.Base;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -22,17 +23,27 @@ public class GeminiClient : IModelConnectorClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
 
-    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest promptRequest, string model)
     {
         var url = $"{MainUrl}/{model}:generateContent?key={ApiKey}";
         
         // Initialize the parts list with the user text by default
-        var partsList = new List<GeminiPart> { new GeminiPart { text = promptRequest.user } };
+        var partsList = new List<GeminiPart> { new GeminiPart { text = promptRequest.Prompt.UserPrompt } };
+
+        if (!string.IsNullOrEmpty(promptRequest.Prompt.UserPromptAddon))
+        {
+            partsList.Insert(0, new GeminiPart { text = promptRequest.Prompt.UserPromptAddon });
+        }
 
         // If the system property exists, insert it as the first element of the parts list
-        if (!string.IsNullOrEmpty(promptRequest.system))
+        if (!string.IsNullOrEmpty(promptRequest.Prompt.SystemPrompt))
         {
-            partsList.Insert(0, new GeminiPart { text = promptRequest.system });
+            partsList.Insert(0, new GeminiPart { text = promptRequest.Prompt.SystemPrompt });
+        }
+
+        if (!string.IsNullOrEmpty(promptRequest.Context?.Context))
+        {
+            partsList.Insert(0, new GeminiPart { text = promptRequest.Context.Context });
         }
 
         var payload = new GeminiTextRequest()
@@ -55,9 +66,9 @@ public class GeminiClient : IModelConnectorClient
                 _logger.LogError($"Error generating text: {responseContent}");
                 if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
                 {
-                    return new FloomPromptResponse { success = false, message = "Gemini model is overloaded. Please try again later", errorCode = ModelConnectorErrors.ModelOverloaded };
+                    return new ModelConnectorResult { Success = false, Message = "Gemini model is overloaded. Please try again later", ErrorCode = ModelConnectorErrors.ModelOverloaded };
                 }
-                return new FloomPromptResponse { success = false, message = "Error generating text" };
+                return new ModelConnectorResult { Success = false, Message = "Error generating text" };
             }
 
             var options = new JsonSerializerOptions
@@ -68,17 +79,15 @@ public class GeminiClient : IModelConnectorClient
             var result = JsonSerializer.Deserialize<GeminiGenerateTextResponse>(responseContent , options);
 
             var generatedTextParts = result.Candidates.FirstOrDefault()?.Content.Parts.Select(p => p.Text).ToList();
-
-            var responseValues = generatedTextParts?.Select(text => new ResponseValue
+            
+            return new ModelConnectorResult
             {
-                type = DataType.String,
-                value = text
-            }).ToList();
-
-            return new FloomPromptResponse
-            {
-                success = true,
-                values = responseValues ?? new List<ResponseValue>()
+                Success = true,
+                Data = new ResponseValue()
+                {
+                    type = DataType.String,
+                    value = generatedTextParts.FirstOrDefault()
+                }
             };
         }
     }
@@ -117,7 +126,6 @@ public class GeminiClient : IModelConnectorClient
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogError($"Error generating embeddings in batch starting with index {i}: {responseContent}");
-                    // Consider how to handle partial failures - for simplicity, we're continuing here
                     continue;
                 }
 

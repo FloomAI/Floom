@@ -1,5 +1,7 @@
 using Floom.Model;
 using Floom.Pipeline;
+using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugin.Base;
 
 namespace Floom.Plugins.Model.Connectors.Anthropic;
@@ -12,27 +14,20 @@ public class AnthropicModelConnectorPlugin : ModelConnectorPluginBase<AnthropicC
         _client.ApiKey = settings.ApiKey;
     }
     
-    protected override FloomPromptResponse ProcessPromptRequest(PipelineContext pipelineContext, FloomPromptRequest promptRequest)
+    protected override ModelConnectorResult ProcessPromptRequest(PipelineContext pipelineContext, FloomRequest floomRequest)
     {
-        var responseConfig = pipelineContext.Pipeline.Response?.Format?.First();
+        var responseType = floomRequest.Prompt.ResponseType;
 
-        var responseType = "text";
-        
-        if (responseConfig != null)
+        if (responseType is DataType.String or DataType.JsonObject)
         {
-            var responseTypeConfig = responseConfig.Configuration.GetValueOrDefault("type", "text");
-            responseType = responseTypeConfig.ToString();
-        }
+            return _client.GenerateTextAsync(floomRequest, _settings.Model).Result;
+        }        
         
-        if (responseType == "text")
+        return new ModelConnectorResult
         {
-            return _client.GenerateTextAsync(promptRequest, _settings.Model).Result;
-        }
-        
-        return new FloomPromptResponse()
-        {
-            success = false,
-            message = $"Error, Gemini Does not support response type: {responseType}"
+            Success = false,
+            Message = $"Error, Anthropic Does not support response type: {responseType}",
+            ErrorCode = ModelConnectorErrors.UnsupportedResponseType
         };
     }
 }

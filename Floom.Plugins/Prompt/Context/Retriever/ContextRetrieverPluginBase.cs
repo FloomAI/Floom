@@ -1,7 +1,7 @@
 using Floom.Assets;
 using Floom.Audit;
 using Floom.Pipeline;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Floom.Plugins.Prompt.Context.Embeddings;
@@ -44,14 +44,18 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         var vectorSearchResults = new List<VectorSearchResult>();
         var mergedResults = Empty;
         
+        var promptTemplateResultEvent = pipelineContext.GetEvents().FirstOrDefault(x => x.GetType() == typeof(PromptTemplateResultEvent)) as PromptTemplateResultEvent;
+        var promptTemplateResult = promptTemplateResultEvent.ResultData;
+        var userPrompt = promptTemplateResult.UserPrompt;
+        
         //Iterate Data
         #region Get Query Embeddings
 
-        EmbeddingsProvider? embeddingsProvider = GetEmbeddingsProvider(pipelineContext);
+        var embeddingsProvider = GetEmbeddingsProvider(pipelineContext);
         
         var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(new List<string>()
         {
-            pipelineContext.Request.prompt
+            userPrompt
         });
 
         if (embeddingsResult.Success == false)
@@ -88,17 +92,16 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
             mergedResults += $"{vectorSearchResult.text}. \n";
         }
 
-        // Obtaining PromptTemplateResultEvent from pipelineContext.Events
+        var promptContextResult = new PromptContextResult
+        {
+            Context = ""
+        };
         
-        var promptTemplateResultEvent = pipelineContext.GetEvents().FirstOrDefault(x => x.GetType() == typeof(PromptTemplateResultEvent)) as PromptTemplateResultEvent;
-        var promptRequest = promptTemplateResultEvent.ResultData;
-        
-        //Add Data to the System's Prompt (Make sure it ends with dot.)
-        promptRequest.system += $"Answer directly and shortly, no additions, just the answer itself. ";
+        promptContextResult.Context += $"Answer directly and shortly, no additions, just the answer itself. ";
 
         if (mergedResults.Length > 0)
         {
-            promptRequest.system += $" \n The documentation section is: '{mergedResults}' "; //Documentation supplied
+            promptContextResult.Context += $" \n The documentation section is: '{mergedResults}' "; //Documentation supplied
         }
 
         #endregion
@@ -106,7 +109,7 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         return new PluginResult()
         {
             Success = true,
-            Data = promptRequest
+            Data = promptContextResult
         };
     }
 

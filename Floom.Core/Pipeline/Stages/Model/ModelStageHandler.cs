@@ -1,16 +1,15 @@
 using Floom.Model;
-using Floom.Plugin;
 using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
 
-namespace Floom.Pipeline.StageHandler.Model;
+namespace Floom.Pipeline.Stages.Model;
 
 public interface IModelStageHandler : IStageHandler { }
 
 
-public class ModelConnectorResultEvent : PipelineEvent
+public class ModelStageResultEvent : PipelineEvent
 {
-    public FloomPromptResponse Response { get; set; }
+    public ModelConnectorResult Response { get; set; }
 }
 
 public class ModelStageHandler : IModelStageHandler
@@ -39,7 +38,6 @@ public class ModelStageHandler : IModelStageHandler
     
     private async Task HandleConnectorAsync(PipelineContext pipelineContext)
     {
-        // Logic to handle prompt template
         if(pipelineContext.Pipeline.Model != null)
         {
             _logger.LogInformation("Model Stage: Handling model connector.");
@@ -54,9 +52,9 @@ public class ModelStageHandler : IModelStageHandler
                     
                     var pluginResult = await connectorPlugin.Execute(modelConnectorPluginContext, pipelineContext);
                     
-                    pipelineContext.AddEvent(new ModelConnectorResultEvent
+                    pipelineContext.AddEvent(new ModelStageResultEvent
                     {
-                        Response = pluginResult.Data as FloomPromptResponse,
+                        Response = pluginResult.Data as ModelConnectorResult,
                     });
                 }
                 else

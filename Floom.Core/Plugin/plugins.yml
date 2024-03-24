@@ -202,7 +202,7 @@
     - response.format
   events: []
   parameters:
-    formatType:
+    type:
       type: string
       description: Type of response formatting
   owner:

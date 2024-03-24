@@ -1,5 +1,5 @@
 ﻿using System.Net;
-using System.Text.Json.Serialization;
+using Microsoft.VisualBasic.CompilerServices;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace Floom.Pipeline.Entities.Dtos
@@ -9,18 +9,17 @@ namespace Floom.Pipeline.Entities.Dtos
         
     }
     
-    public class FloomResponse : FloomResponseBase
+    public class ResponseFormatterResult
     {
-        public string messageId { get; set; } = "";
-        public string chatId { get; set; } = "";
-        public List<ResponseValue> values { get; set; } = new List<ResponseValue>();
-        public long processingTime { get; set; }
-        public FloomResponseTokenUsage tokenUsage { get; set; }
-        public bool? success { get; set; }
-        public string? message { get; set; }
-        public int? errorCode { get; set; }
+        public ResponseValue value { get; set; } = new();
     }
 
+    public class FloomPipelineResponse : FloomResponseBase
+    {
+        public bool? success { get; set; }
+        public ResponseValue? value { get; set; }
+    }
+    
     public class FloomPipelineErrorResponse : FloomResponseBase
     {
         public bool? success { get; set; }
@@ -33,19 +32,46 @@ namespace Floom.Pipeline.Entities.Dtos
     {
         public DataType type { get; set; } = DataType.String;
         public string format { get; set; } = "";
-        public string value { get; set; } = ""; //String value
-        public string b64 { get; set; } = "";
-        public string url { get; set; } = "";
-
-        [JsonIgnore] public byte[]? valueRaw { get; set; } = null;
+        public object value { get; set; } = "";
     }
 
     public enum DataType
     {
         String = 1,
         Image = 2,
-        Video = 3,
-        Audio = 4
+        Audio = 3,
+        JsonObject = 4
+    }
+
+    public static class ResponseFormat
+    {
+        public static string FromDataType(DataType dataType)
+        {
+            return dataType switch
+            {
+                DataType.String => "text/plain",
+                DataType.Image => "image/png",
+                DataType.Audio => "audio/mp4",
+                DataType.JsonObject => "application/json",
+                _ => "text/plain"
+            };
+        }
+        
+        public static DataType FromString(string format)
+        {
+            return format switch
+            {
+                "text" => DataType.String,
+                "text/plain" => DataType.String,
+                "image" => DataType.Image,
+                "image/png" => DataType.Image,
+                "audio" => DataType.Audio,
+                "audio/mp4" => DataType.Audio,
+                "object" => DataType.JsonObject,
+                "application/json" => DataType.JsonObject,
+                _ => DataType.String
+            };
+        }
     }
 
     [BsonIgnoreExtraElements]

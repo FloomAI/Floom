@@ -4,6 +4,7 @@ using System.Text.Json;
 using Floom.Logs;
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 using Microsoft.Extensions.Logging;
 
 namespace Floom.Plugins.Model.Connectors.Anthropic;
@@ -13,25 +14,41 @@ public class AnthropicClient : IModelConnectorClient
     private readonly ILogger _logger;
     public string? ApiKey { get; set; }
     private const string API_VERSION = "2023-06-01";
+    readonly string MainUrl = "https://api.anthropic.com/v1";
 
     public AnthropicClient()
     {
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
 
-    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest promptRequest, string model)
     {
-        var requestUri = "https://api.anthropic.com/v1/messages";
-        var payload = new
+        var requestUri = $"{MainUrl}/messages";
+        var payload = new AnthropicRequest
         {
             model = model,
             max_tokens = 1024,
-            messages = new List<object>
+            messages = new List<AnthropicMessage>
             {
-                new { role = "user", content = promptRequest.user }
+                new() { role = "user", content = promptRequest.Prompt.UserPrompt }
             }
         };
 
+        if (!string.IsNullOrEmpty(promptRequest.Prompt.UserPromptAddon))
+        {
+            payload.messages.Add(new AnthropicMessage { role = "user", content = promptRequest.Prompt.UserPromptAddon });
+        }
+        
+        if(!string.IsNullOrEmpty(promptRequest.Prompt.SystemPrompt))
+        {
+            payload.system = promptRequest.Prompt.SystemPrompt;
+        }
+
+        if (!string.IsNullOrEmpty(promptRequest.Context?.Context))
+        {
+            payload.system += " " + promptRequest.Context.Context;
+        }
+        
         using (var httpClient = new HttpClient())
         {
             var requestContent = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -46,7 +63,7 @@ public class AnthropicClient : IModelConnectorClient
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError($"Anthropic API call failed with status code {response.StatusCode} and message {responseString}");
-                return new FloomPromptResponse { success = false, message = "Anthropic Error Generating Text" };
+                return new ModelConnectorResult { Success = false, Message = "Anthropic Error Generating Text" };
             }
 
             var anthropicResponse = JsonSerializer.Deserialize<AnthropicResponse>(responseString, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
@@ -59,13 +76,38 @@ public class AnthropicClient : IModelConnectorClient
                 value = text
             }).ToList();
 
-            return new FloomPromptResponse
+            if(generatedTextParts == null || !generatedTextParts.Any())
             {
-                success = true,
-                values = responseValues ?? new List<ResponseValue>()
+                _logger.LogError("Anthropic API call returned no content");
+                return new ModelConnectorResult { Success = false, Message = "Anthropic Error Generating Text" };
+            }
+
+            return new ModelConnectorResult
+            {
+                Success = true,
+                Data = new ResponseValue()
+                {
+                    type = DataType.String,
+                    value = generatedTextParts.FirstOrDefault()
+                }
             };
         }
     }
+}
+
+
+public class AnthropicRequest
+{
+    public string model { get; set; }
+    public int max_tokens { get; set; }
+    public List<AnthropicMessage> messages { get; set; }
+    public string system { get; set; }
+}
+
+public class AnthropicMessage
+{
+    public string role { get; set; }
+    public string content { get; set; }
 }
 
 public class AnthropicResponse
