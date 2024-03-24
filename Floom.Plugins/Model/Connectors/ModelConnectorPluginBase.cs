@@ -1,6 +1,6 @@
 using Floom.Model;
 using Floom.Pipeline;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Microsoft.Extensions.Logging;
@@ -34,24 +34,19 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
 
     protected abstract void InitializeClient(ModelConnectorPluginConfig settings);
 
-    protected FloomPromptRequest? FinalizePromptRequest(PipelineContext pipelineContext)
+    protected FloomRequest? FinalizePromptRequest(PipelineContext pipelineContext)
     {
-        var promptTemplateResultEvent = pipelineContext.GetEvents()
-            .OfType<PromptTemplateResultEvent>()
+        var promptStageResult = pipelineContext.GetEvents()
+            .OfType<PromptStageResultEvent>()
             .FirstOrDefault()
             ?.ResultData;
-
-        var promptContextResultEvent = pipelineContext.GetEvents()
-            .OfType<PromptContextResultEvent>()
-            .FirstOrDefault()
-            ?.ResultData;
-
-        return promptContextResultEvent ?? promptTemplateResultEvent;
+        
+        return promptStageResult;
     }
     
-    protected virtual FloomPromptResponse ProcessPromptRequest(PipelineContext pipelineContext, FloomPromptRequest promptRequest)
+    protected virtual ModelConnectorResult ProcessPromptRequest(PipelineContext pipelineContext, FloomRequest floomRequest)
     {
-        return _client.GenerateTextAsync(promptRequest, _settings.Model).Result;
+        return _client.GenerateTextAsync(floomRequest, _settings.Model).Result;
     }
     
     public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
@@ -64,8 +59,8 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
         if (_settings.Model != null && promptRequest != null)
         {
             var response = ProcessPromptRequest(pipelineContext, promptRequest);
-
-            if (response.success)
+            
+            if (response.Success)
             {
                 _logger.LogInformation($"{GetType()} Completed Successfully");
                 
@@ -76,13 +71,13 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
                 };
             }
 
-            _logger.LogError($"{GetType()} Failed: {response.message}");
+            _logger.LogError($"{GetType()} Failed: {response.Message}");
                 
             return new PluginResult()
             {
                 Success = false,
                 Data = response,
-                Message = response.message
+                Message = response.Message
             };
         }
         
@@ -101,5 +96,5 @@ public abstract class ModelConnectorPluginBase<TClient> : FloomPluginBase where 
 
 public interface IModelConnectorClient
 {
-    Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest promptRequest, string model);
+    Task<ModelConnectorResult> GenerateTextAsync(FloomRequest floomRequest, string model);
 }

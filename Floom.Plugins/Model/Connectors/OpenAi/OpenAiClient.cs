@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -11,6 +10,7 @@ using Floom.Pipeline.Entities.Dtos;
 using Floom.Plugins.Prompt.Context.Embeddings.OpenAi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using FloomRequest = Floom.Pipeline.Stages.Prompt.FloomRequest;
 
 namespace Floom.Plugins.Model.Connectors.OpenAi;
 
@@ -25,13 +25,10 @@ public class OpenAiClient : IModelConnectorClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
     
-    public async Task<FloomPromptResponse> GenerateTextAsync(FloomPromptRequest prompt, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest prompt, string model)
     {
-        FloomPromptResponse promptResponse = new FloomPromptResponse();
-
-        Stopwatch swPrompt = new Stopwatch();
-        swPrompt.Start();
-
+        var modelConnectorResult = new ModelConnectorResult();
+        
         using (HttpClient client = new HttpClient())
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
@@ -45,44 +42,44 @@ public class OpenAiClient : IModelConnectorClient
                 temperature = 0.5
             };
 
-            //Add messages
-
-            //Add History (System+User+Assistant)
-
-            //Add all messages
-            foreach (FloomPromptMessage promptMessage in prompt.previousMessages)
+            
+            if (!string.IsNullOrEmpty(prompt.Context?.Context))
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
-                    role = promptMessage.role,
-                    content = promptMessage.content
+                    role = "system",
+                    content = prompt.Context.Context
+                });
+            }
+            
+            if (!string.IsNullOrEmpty(prompt.Prompt.SystemPrompt))
+            {
+                generateTextRequestBody.messages.Add(new Message()
+                {
+                    role = "system",
+                    content = prompt.Prompt.SystemPrompt
                 });
             }
 
-            //If history empty OR first in history not system
-            if (prompt.previousMessages.Count == 0 || prompt.previousMessages.First().role != "system")
-            {
-                //take system from prompt
-                if (prompt.system != null)
-                {
-                    generateTextRequestBody.messages.Add(new Message()
-                    {
-                        role = "system",
-                        content = prompt.system
-                    });
-                }
-            }
-
-            //dd
-            //Add User
-            if (prompt.user != null)
+            // Add User Prompt
+            if (prompt.Prompt.UserPrompt != null)
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "user",
-                    content = prompt.user
+                    content = prompt.Prompt.UserPrompt
                 });
             }
+            
+            if (prompt.Prompt.UserPromptAddon != null)
+            {
+                generateTextRequestBody.messages.Add(new Message()
+                {
+                    role = "user",
+                    content = prompt.Prompt.UserPromptAddon
+                });
+            }
+
 
             string requestBody = JsonSerializer.Serialize(generateTextRequestBody);
             StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
@@ -97,22 +94,22 @@ public class OpenAiClient : IModelConnectorClient
             {
                 _logger.LogError("Unable to authenticate to OpenAI");
                 
-                return new FloomPromptResponse()
+                return new ModelConnectorResult
                 {
-                    success = false,
-                    message = $"OpenAI: Unable to authenticate",
-                    errorCode = ModelConnectorErrors.InvalidApiKey
+                    Success = false,
+                    Message = $"OpenAI: Unable to authenticate",
+                    ErrorCode = ModelConnectorErrors.InvalidApiKey
                 };
             }
 
             if (responseCode == HttpStatusCode.NotFound)
             {
                 _logger.LogError("Invalid model name " + model);
-                return new FloomPromptResponse()
+                return new ModelConnectorResult()
                 {
-                    success = false,
-                    message = $"OpenAI: Invalid model name",
-                    errorCode = ModelConnectorErrors.InvalidModelName
+                    Success = false,
+                    Message = $"OpenAI: Invalid model name",
+                    ErrorCode = ModelConnectorErrors.InvalidModelName
                 };
             }
             
@@ -126,34 +123,16 @@ public class OpenAiClient : IModelConnectorClient
             }
 
             //Fill Response
-            promptResponse = new FloomPromptResponse()
+            modelConnectorResult.Success = true;
+            modelConnectorResult.Data = new ResponseValue()
             {
-                success = true,
-                elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
-                tokenUsage = new FloomPromptTokenUsage()
-                {
-                    processingTokens = chatResponse.usage.completion_tokens,
-                    promptTokens = chatResponse.usage.prompt_tokens,
-                    totalTokens = chatResponse.usage.total_tokens
-                }
+                type = DataType.String,
+                format = ResponseFormat.FromDataType(DataType.String),
+                value = chatResponse.choices.First().message.content
             };
-
-            //Add all choices
-            foreach (var choice in chatResponse.choices)
-            {
-                promptResponse.values.Add(
-                    new ResponseValue()
-                    {
-                        type = DataType.String,
-                        value = choice.message.content
-                    }
-                );
-            }
         }
-
-        swPrompt.Stop();
-
-        return promptResponse;
+        
+        return modelConnectorResult;
     }
 
     public async Task<IActionResult> ValidateModelAsync(string model)
@@ -256,13 +235,10 @@ public class OpenAiClient : IModelConnectorClient
         return FloomOperationResult<List<List<float>>>.CreateSuccessResult(pagesEmbeddings);
     }
 
-    public async Task<FloomPromptResponse> GenerateImageAsync(FloomPromptRequest prompt, string model)
+    public async Task<ModelConnectorResult> GenerateImageAsync(FloomRequest prompt, string model)
     {
-        FloomPromptResponse promptResponse = new FloomPromptResponse();
-
-        Stopwatch swPrompt = new Stopwatch();
-        swPrompt.Start();
-
+        var modelConnectorResult = new ModelConnectorResult();
+        
         using (HttpClient client = new HttpClient())
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
@@ -271,10 +247,10 @@ public class OpenAiClient : IModelConnectorClient
             //Create the request message
             GenerateImageRequestBody request = new GenerateImageRequestBody
             {
-                prompt = prompt.user,
+                prompt = prompt.Prompt.UserPrompt,
                 size = "1024x1024",
                 n = 1,
-                response_format = "url"
+                response_format = "b64_json"
             };
 
             string requestBody = JsonSerializer.Serialize(request);
@@ -289,22 +265,22 @@ public class OpenAiClient : IModelConnectorClient
             {
                 _logger.LogError("Unable to authenticate to OpenAI");
                 
-                return new FloomPromptResponse()
+                return new ModelConnectorResult()
                 {
-                    success = false,
-                    message = $"OpenAI: Unable to authenticate",
-                    errorCode = ModelConnectorErrors.InvalidApiKey
+                    Success = false,
+                    Message = $"OpenAI: Unable to authenticate",
+                    ErrorCode = ModelConnectorErrors.InvalidApiKey
                 };
             }
 
             if (responseCode == HttpStatusCode.NotFound)
             {
                 _logger.LogError("Invalid model name " + model);
-                return new FloomPromptResponse()
+                return new ModelConnectorResult()
                 {
-                    success = false,
-                    message = $"OpenAI: Invalid model name",
-                    errorCode = ModelConnectorErrors.InvalidModelName
+                    Success = false,
+                    Message = $"OpenAI: Invalid model name",
+                    ErrorCode = ModelConnectorErrors.InvalidModelName
                 };
             }
             string responseContent = await response.Content.ReadAsStringAsync();
@@ -320,36 +296,24 @@ public class OpenAiClient : IModelConnectorClient
                     //Convert response to byte[]
                     foreach (var data in generateResponse.data)
                     {
-                        byte[] imageRaw = Convert.FromBase64String(data.b64_json);
-
-                        promptResponse.values.Add(
-                            new ResponseValue()
-                            {
-                                type = DataType.Image,
-                                format = "png",
-                                valueRaw = imageRaw,
-                                b64 = data.b64_json
-                            }
-                        );
+                        modelConnectorResult.Data = new ResponseValue()
+                        {
+                            type = DataType.Image,
+                            format = ResponseFormat.FromDataType(DataType.Image),
+                            value = data.b64_json
+                        };
                     }
 
                     break;
                 case "url":
-                    //Download to byte[]
                     foreach (var data in generateResponse.data)
                     {
-                        HttpClient imageDownloader = new HttpClient();
-                        byte[] imageRaw = await imageDownloader.GetByteArrayAsync(data.url);
-
-                        promptResponse.values.Add(
-                            new ResponseValue()
-                            {
-                                type = DataType.Image,
-                                format = "png",
-                                valueRaw = imageRaw,
-                                b64 = Convert.ToBase64String(imageRaw)
-                            }
-                        );
+                        modelConnectorResult.Data = new ResponseValue()
+                        {
+                            type = DataType.Image,
+                            format = ResponseFormat.FromDataType(DataType.Image),
+                            value = data.url
+                        };
                     }
 
                     break;
@@ -361,22 +325,16 @@ public class OpenAiClient : IModelConnectorClient
             }
 
             //Fill Response
-            promptResponse.success = true;
-            promptResponse.elapsedProcessingTime = swPrompt.ElapsedMilliseconds;
+            modelConnectorResult.Success = true;
         }
-
-        swPrompt.Stop();
-
-        return promptResponse;
+        
+        return modelConnectorResult;
     }
     
-    public async Task<FloomPromptResponse> GenerateTextToSpeechAsync(FloomPromptRequest prompt, string model, string voice)
+    public async Task<ModelConnectorResult> GenerateTextToSpeechAsync(FloomRequest prompt, string model, string voice)
     {
-        FloomPromptResponse promptResponse = new FloomPromptResponse();
-
-        Stopwatch swPrompt = new Stopwatch();
-        swPrompt.Start();
-
+        var modelConnectorResult = new ModelConnectorResult();
+        
         using (HttpClient client = new HttpClient())
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
@@ -387,7 +345,7 @@ public class OpenAiClient : IModelConnectorClient
             {
                 model = model,
                 voice = voice,
-                input = prompt.user ?? string.Empty
+                input = prompt.Prompt.UserPrompt
             };
             
 
@@ -404,22 +362,22 @@ public class OpenAiClient : IModelConnectorClient
             {
                 _logger.LogError("Unable to authenticate to OpenAI");
                 
-                return new FloomPromptResponse()
+                return new ModelConnectorResult()
                 {
-                    success = false,
-                    message = $"OpenAI: Unable to authenticate",
-                    errorCode = ModelConnectorErrors.InvalidApiKey
+                    Success = false,
+                    Message = $"OpenAI: Unable to authenticate",
+                    ErrorCode = ModelConnectorErrors.InvalidApiKey
                 };
             }
 
             if (responseCode == HttpStatusCode.NotFound)
             {
                 _logger.LogError("Invalid model name " + model);
-                return new FloomPromptResponse()
+                return new ModelConnectorResult()
                 {
-                    success = false,
-                    message = $"OpenAI: Invalid model name",
-                    errorCode = ModelConnectorErrors.InvalidModelName
+                    Success = false,
+                    Message = $"OpenAI: Invalid model name",
+                    ErrorCode = ModelConnectorErrors.InvalidModelName
                 };
             }
             // Handling binary data
@@ -428,31 +386,22 @@ public class OpenAiClient : IModelConnectorClient
             // For example, converting to Base64 if you need to handle it as a string.
             var base64Audio = Convert.ToBase64String(responseBytes);
 
-            promptResponse = new FloomPromptResponse()
+            modelConnectorResult.Success = true;
+            modelConnectorResult.Data = new ResponseValue()
             {
-                success = true,
-                elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
-                values = new List<ResponseValue>
-                {
-                    new()
-                    {
-                        type = DataType.Audio,
-                        b64 = base64Audio
-                    }
-                }
+                type = DataType.Audio,
+                format = ResponseFormat.FromDataType(DataType.Audio),
+                value = base64Audio
             };
         }
-        swPrompt.Stop();
-
-        return promptResponse;
+        
+        return modelConnectorResult;
     }
     
     
-    public async Task<FloomPromptResponse> GenerateSpeechToTextAsync(byte[] audioBytes, string model)
+    public async Task<ModelConnectorResult> GenerateSpeechToTextAsync(byte[] audioBytes, string model)
     {
-        FloomPromptResponse promptResponse = new FloomPromptResponse();
-        Stopwatch swPrompt = new Stopwatch();
-        swPrompt.Start();
+        var modelConnectorResult = new ModelConnectorResult();
 
         using (HttpClient client = new HttpClient())
         {
@@ -480,22 +429,22 @@ public class OpenAiClient : IModelConnectorClient
                 {
                     _logger.LogError("Unable to authenticate to OpenAI");
                 
-                    return new FloomPromptResponse()
+                    return new ModelConnectorResult()
                     {
-                        success = false,
-                        message = $"OpenAI: Unable to authenticate",
-                        errorCode = ModelConnectorErrors.InvalidApiKey
+                        Success = false,
+                        Message = $"OpenAI: Unable to authenticate",
+                        ErrorCode = ModelConnectorErrors.InvalidApiKey
                     };
                 }
 
                 if (responseCode == HttpStatusCode.NotFound)
                 {
                     _logger.LogError("Invalid model name " + model);
-                    return new FloomPromptResponse()
+                    return new ModelConnectorResult()
                     {
-                        success = false,
-                        message = $"OpenAI: Invalid model name",
-                        errorCode = ModelConnectorErrors.InvalidModelName
+                        Success = false,
+                        Message = $"OpenAI: Invalid model name",
+                        ErrorCode = ModelConnectorErrors.InvalidModelName
                     };
                 }
                 
@@ -504,24 +453,17 @@ public class OpenAiClient : IModelConnectorClient
                 var transcriptionResponse = JsonSerializer.Deserialize<GenerateSpeechResponseBody>(responseString);
 
                 //Fill Response
-                promptResponse = new FloomPromptResponse()
+                modelConnectorResult.Success = true;
+                modelConnectorResult.Data = new ResponseValue()
                 {
-                    success = true,
-                    elapsedProcessingTime = swPrompt.ElapsedMilliseconds,
+                    type = DataType.String,
+                    format = ResponseFormat.FromDataType(DataType.String),
+                    value = transcriptionResponse.text
                 };
-
-                promptResponse.values.Add(
-                    new ResponseValue()
-                    {
-                        type = DataType.String,
-                        value = transcriptionResponse.text
-                    }
-                );
             }
         }
 
-        swPrompt.Stop();
-        return promptResponse;
+        return modelConnectorResult;
     }
 
 }

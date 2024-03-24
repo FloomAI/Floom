@@ -1,39 +1,25 @@
-using Floom.Model;
+using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
 using Floom.Utils;
 
-namespace Floom.Pipeline.StageHandler.Prompt;
+namespace Floom.Pipeline.Stages.Prompt;
 
 public interface IPromptStageHandler : IStageHandler { }
 
-public class PromptTemplateResultEvent : PipelineEvent
-{
-    public FloomPromptRequest? ResultData { get; set; }
-}
-
-public class PromptContextResultEvent : PipelineEvent
-{
-    public FloomPromptRequest? ResultData { get; set; }
-}
-
-public class PromptValidationResultEvent : PipelineEvent
-{
-    public object? ResultData { get; set; }
-}
 
 public class PromptStageHandler : IPromptStageHandler
 {
     private readonly ILogger<PromptStageHandler> _logger;
-    
+    public IPluginLoader PluginLoader { get; }
+    public IPluginContextCreator PluginContextCreator { get; }
+
     public PromptStageHandler(ILogger<PromptStageHandler> logger, IPluginLoader pluginLoader, IPluginContextCreator pluginContextCreator)
     {
         _logger = logger;
         PluginLoader = pluginLoader;
         PluginContextCreator = pluginContextCreator;
     }
-
-    public IPluginLoader PluginLoader { get; }
 
     public async Task ExecuteAsync(PipelineContext pipelineContext)
     {
@@ -51,6 +37,9 @@ public class PromptStageHandler : IPromptStageHandler
         // handle prompt validation
         await HandleValidationAsync(pipelineContext);
         
+        // finish prompt stage
+        await FinalizeStageAsync(pipelineContext);
+        
         _logger.LogInformation($"Completed Prompt Stage Processing: {pipelineContext.Pipeline.Name}");
     }
 
@@ -59,53 +48,48 @@ public class PromptStageHandler : IPromptStageHandler
         // Logic to handle prompt template
         var promptTemplateConfiguration = pipelineContext.Pipeline.Prompt?.Template;
 
-        if (promptTemplateConfiguration != null)
+        if (promptTemplateConfiguration == null)
         {
-            _logger.LogInformation("Prompt Stage: Handling prompt template.");
-            
-            var templatePlugin = PluginLoader.LoadPlugin(promptTemplateConfiguration.Package);
-
-            if (templatePlugin != null)
+            _logger.LogInformation("Prompt Stage: No prompt template found, using default (package: floom/prompt/template/default)");
+            // using default prompt template 'floom/prompt/template/default'
+            promptTemplateConfiguration = new PluginConfiguration()
             {
-                var pluginContext = await PluginContextCreator.Create(promptTemplateConfiguration);
-                
-                templatePlugin.Initialize(pluginContext);
-                
-                var pluginResult = await templatePlugin.Execute(pluginContext, pipelineContext);
+                Package = "floom/prompt/template/default",
+                Configuration = new Dictionary<string, object>()
+            };
+        }
+        
+        _logger.LogInformation("Prompt Stage: Handling prompt template.");
+        
+        var templatePlugin = PluginLoader.LoadPlugin(promptTemplateConfiguration.Package);
+
+        if (templatePlugin != null)
+        {
+            var pluginContext = await PluginContextCreator.Create(promptTemplateConfiguration);
             
-                // Emit an event
-                if (pluginResult.Success)
-                {
-                    pipelineContext.AddEvent(new PromptTemplateResultEvent 
-                    { 
-                        ResultData = pluginResult.Data as FloomPromptRequest,
-                    });
-                }
+            templatePlugin.Initialize(pluginContext);
+            
+            var pluginResult = await templatePlugin.Execute(pluginContext, pipelineContext);
+        
+            // Emit an event
+            if (pluginResult.Success)
+            {
+                pipelineContext.AddEvent(new PromptTemplateResultEvent 
+                { 
+                    ResultData = pluginResult.Data as PromptTemplateResult
+                });
             }
         }
-        else
-        {
-            _logger.LogInformation("Prompt Stage: No prompt template found.");
-            // Emit an empty FloomPromptRequest
-            pipelineContext.AddEvent(new PromptTemplateResultEvent 
-            { 
-                ResultData = new FloomPromptRequest()
-                {
-                    user = pipelineContext.Request.prompt,
-                },
-            });
-        }
 
-        if (pipelineContext.Request.file != null)
+        if (pipelineContext.pipelineRequest.file != null)
         {
             var promptTemplateResultEvents = pipelineContext.GetEvents().OfType<PromptTemplateResultEvent>();
-            promptTemplateResultEvents.ToList().ForEach(e => e.ResultData.file = FileUtils.ConvertIFormFileToByteArrayAsync(pipelineContext.Request.file).Result );
+            promptTemplateResultEvents.ToList().ForEach(e => e.ResultData.File = FileUtils.ConvertIFormFileToByteArrayAsync(pipelineContext.pipelineRequest.file).Result );
         }
     }
 
     private async Task HandleContextAsync(PipelineContext pipelineContext)
     {
-        // Logic to handle prompt context
         var promptContextConfiguration = pipelineContext.Pipeline.Prompt?.Context;
 
         if (promptContextConfiguration != null)
@@ -131,7 +115,7 @@ public class PromptStageHandler : IPromptStageHandler
                     {
                         pipelineContext.AddEvent(new PromptContextResultEvent 
                         { 
-                            ResultData = pluginResult.Data as FloomPromptRequest,
+                            ResultData = pluginResult.Data as PromptContextResult,
                         });
                     }
                 }
@@ -141,7 +125,6 @@ public class PromptStageHandler : IPromptStageHandler
 
     private async Task HandleOptimizationAsync(PipelineContext pipelineContext)
     {
-        // Logic to handle prompt optimization
         var promptOptimizationConfiguration = pipelineContext.Pipeline.Prompt?.Optimization;
 
         if (promptOptimizationConfiguration != null && promptOptimizationConfiguration.Any())
@@ -152,7 +135,6 @@ public class PromptStageHandler : IPromptStageHandler
 
     private async Task HandleValidationAsync(PipelineContext pipelineContext)
     {
-        // Logic to handle prompt validation
         var promptValidationConfiguration = pipelineContext.Pipeline.Prompt?.Validation;
 
         if (promptValidationConfiguration != null)
@@ -183,6 +165,22 @@ public class PromptStageHandler : IPromptStageHandler
             }
         }
     }
-
-    public IPluginContextCreator PluginContextCreator { get; }
+    
+    private async Task FinalizeStageAsync(PipelineContext pipelineContext)
+    {
+        var floomRequest = new FloomRequest();
+        // Logic to finalize prompt stage
+        var templateResult = pipelineContext.GetEvents().OfType<PromptTemplateResultEvent>();
+        
+        floomRequest.Prompt = templateResult.FirstOrDefault()?.ResultData;
+        
+        var contextResult = pipelineContext.GetEvents().OfType<PromptContextResultEvent>();
+        
+        if(contextResult.Any())
+        {
+            floomRequest.Context = contextResult.FirstOrDefault()?.ResultData;
+        }
+        
+        pipelineContext.AddEvent(new PromptStageResultEvent { ResultData = floomRequest });
+    }
 }

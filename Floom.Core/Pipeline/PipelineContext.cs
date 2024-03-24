@@ -30,7 +30,7 @@ public class PipelineContext
 {
     public string PipelineName { get; set; }
     
-    public FloomRequest Request { get; set; }
+    public RunFloomPipelineRequest pipelineRequest { get; set; }
     public PipelineExecutionStatus Status { get; set; }
     public PipelineExecutionStage CurrentStage { get; set; }
     

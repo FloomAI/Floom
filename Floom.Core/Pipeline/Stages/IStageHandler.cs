@@ -1,4 +1,4 @@
-namespace Floom.Pipeline.StageHandler;
+namespace Floom.Pipeline.Stages;
 
 public interface IStageHandler
 {

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Amazon.DynamoDBv2;
 using Floom.Assets;
 using Floom.Audit;
 using Floom.Auth;
@@ -8,8 +7,9 @@ using Floom.Config;
 using Floom.Events;
 using Floom.Logs;
 using Floom.Pipeline;
-using Floom.Pipeline.StageHandler.Model;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Stages.Model;
+using Floom.Pipeline.Stages.Prompt;
+using Floom.Pipeline.Stages.Response;
 using Floom.Plugin.Context;
 using Floom.Plugin.Loader;
 using Floom.Plugin.Manifest;
@@ -136,6 +136,7 @@ builder.Services.AddTransient(provider => new Lazy<IPipelineExecutor>(provider.G
 
 builder.Services.AddScoped<IModelStageHandler, ModelStageHandler>();
 builder.Services.AddScoped<IPromptStageHandler, PromptStageHandler>();
+builder.Services.AddScoped<IResponseStageHandler, ResponseStageHandler>();
 
 builder.Services.AddSingleton<FloomAssetsRepository>();
 builder.Services.AddSingleton<FloomAuditService>();

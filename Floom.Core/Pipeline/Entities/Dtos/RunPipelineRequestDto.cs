@@ -1,6 +1,6 @@
 ﻿namespace Floom.Pipeline.Entities.Dtos;
 
-public class FloomRequest
+public class RunFloomPipelineRequest
 {
     public string? pipelineId { get; set; } //Pipeline ID
     public string? username { get; set; } //User Name

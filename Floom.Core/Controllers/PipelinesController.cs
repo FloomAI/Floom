@@ -40,19 +40,19 @@ public class PipelinesController : ControllerBase
 
     [HttpPost("Run")]
     [Consumes("application/json")]
-    public async Task<IActionResult> Run(FloomRequest? floomRequest)
+    public async Task<IActionResult> Run(RunFloomPipelineRequest? floomRequest)
     {
         return await RunCommon(floomRequest);
     }
 
     [HttpPost("Run")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> RunForm([FromForm] FloomRequest? floomRequest)
+    public async Task<IActionResult> RunForm([FromForm] RunFloomPipelineRequest? floomRequest)
     {
         return await RunCommon(floomRequest);
     }
 
-    private async Task<IActionResult> RunCommon(FloomRequest? floomRequest)
+    private async Task<IActionResult> RunCommon(RunFloomPipelineRequest? floomRequest)
     {
         if (floomRequest == null)
         {

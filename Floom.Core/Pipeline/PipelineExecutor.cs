@@ -2,8 +2,9 @@ using System.Net;
 using Floom.Auth;
 using Floom.Pipeline.Entities;
 using Floom.Pipeline.Entities.Dtos;
-using Floom.Pipeline.StageHandler.Model;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Stages.Model;
+using Floom.Pipeline.Stages.Prompt;
+using Floom.Pipeline.Stages.Response;
 using Floom.Plugin.Context;
 using Floom.Repository;
 using Floom.Utils;
@@ -12,7 +13,7 @@ namespace Floom.Pipeline;
 
 public interface IPipelineExecutor
 {
-    Task<FloomResponseBase> Execute(FloomRequest floomRequest);
+    Task<FloomResponseBase> Execute(RunFloomPipelineRequest floomRequest);
 }
 
 public class PipelineExecutor : IPipelineExecutor
@@ -22,11 +23,13 @@ public class PipelineExecutor : IPipelineExecutor
     private readonly IRepository<UserEntity> _usersRepository;
     private readonly IModelStageHandler _modelStageHandler;
     private readonly IPromptStageHandler _promptStageHandler;
+    private readonly IResponseStageHandler _responseStageHandler;
     private readonly IPluginContextCreator _pluginContextCreator;
     
     public PipelineExecutor(
         IModelStageHandler modelStageHandler,
         IPromptStageHandler promptStageHandler,
+        IResponseStageHandler responseStageHandler,
         IRepositoryFactory repositoryFactory,
         IPluginContextCreator pluginContextCreator,
         ILogger<PipelineExecutor> logger)
@@ -36,10 +39,11 @@ public class PipelineExecutor : IPipelineExecutor
         _usersRepository = repositoryFactory.Create<UserEntity>();
         _modelStageHandler = modelStageHandler;
         _promptStageHandler = promptStageHandler;
+        _responseStageHandler = responseStageHandler;
         _pluginContextCreator = pluginContextCreator;
     }
 
-    public async Task<FloomResponseBase> Execute(FloomRequest floomRequest)
+    public async Task<FloomResponseBase> Execute(RunFloomPipelineRequest floomRequest)
     {
         _logger.LogInformation($"Starting Pipeline Execution: {floomRequest.pipelineId}");
 
@@ -105,7 +109,7 @@ public class PipelineExecutor : IPipelineExecutor
             };
         }
         
-        pipelineContext.Request = floomRequest;
+        pipelineContext.pipelineRequest = floomRequest;
         pipelineContext.Pipeline = await pipeline.ToModel(_pluginContextCreator);
         
         // Status and CurrentStage needs to be changed to events
@@ -123,51 +127,71 @@ public class PipelineExecutor : IPipelineExecutor
         // handle model stage
         await _modelStageHandler.ExecuteAsync(pipelineContext);
         
-        var promptResponseEvents = pipelineContext.GetEvents().OfType<ModelConnectorResultEvent>();
+        var modelConnectorEvents = pipelineContext.GetEvents().OfType<ModelStageResultEvent>();
         
-        var promptResponse = promptResponseEvents.FirstOrDefault()?.Response;
-
-        FloomResponseBase? floomResponse;
+        var modelConnectorResponse = modelConnectorEvents.FirstOrDefault()?.Response;
         
-        if (promptResponse == null)
+        if (modelConnectorResponse == null)
         {
-            _logger.LogError($"Model Stage: No response from model connector");
-            floomResponse = new FloomPipelineErrorResponse()
+            _logger.LogError($"Pipeline Execution Failed: Model Stage Error: No response from model connector {floomRequest.pipelineId}");
+            
+            pipelineContext.Status = PipelineExecutionStatus.Completed;
+
+            return new FloomPipelineErrorResponse
             {
                 success = false,
                 message = "No response from model connector",
                 statusCode = HttpStatusCode.BadRequest
             };
         }
-        else if(promptResponse.success == false)
+        
+        if (modelConnectorResponse.Success == false)
         {
-            _logger.LogError($"Model Stage: Failed: {promptResponse.message}");
-            floomResponse = new FloomPipelineErrorResponse()
+            _logger.LogError($"Pipeline Execution Failed: Model Stage Error: No response from model connector {floomRequest.pipelineId}");
+            
+            pipelineContext.Status = PipelineExecutionStatus.Completed;
+
+            return new FloomPipelineErrorResponse
             {
                 success = false,
-                message = promptResponse.message,
-                errorCode = promptResponse.errorCode,
+                message = modelConnectorResponse.Message,
+                errorCode = modelConnectorResponse.ErrorCode,
                 statusCode = HttpStatusCode.BadRequest
             };
         }
-        else
-        {
-            floomResponse = new FloomResponse()
-            {
-                messageId = "",
-                chatId = "",
-                values = promptResponse?.values,
-                processingTime = promptResponse.elapsedProcessingTime,
-                tokenUsage = promptResponse.tokenUsage == null
-                    ? new FloomResponseTokenUsage()
-                    : promptResponse.tokenUsage.ToFloomResponseTokenUsage()
-            };
-        }
         
-        _logger.LogInformation($"Completing Pipeline Execution: {floomRequest.pipelineId}");
+        pipelineContext.CurrentStage = PipelineExecutionStage.Response;
+
+        // handle response stage
+
+        await _responseStageHandler.ExecuteAsync(pipelineContext);
+        
+        // Get Response Stage Event
+        var responseStageResultEvents = pipelineContext.GetEvents().OfType<ResponseStageResultEvent>();
+        
+        var responseStageResult = responseStageResultEvents.FirstOrDefault()?.ResultData;
 
         pipelineContext.Status = PipelineExecutionStatus.Completed;
 
-        return floomResponse;
+        if (responseStageResult != null)
+        {
+            _logger.LogInformation($"Completing Pipeline Execution: {floomRequest.pipelineId}");
+            
+            return new FloomPipelineResponse
+            {
+                success = true,
+                value = responseStageResult.value,
+            };
+        }
+
+        _logger.LogError($"Pipeline ({floomRequest.pipelineId}) Execution Failed: Response Stage Error: No response from response formatter ");
+        
+        return new FloomPipelineErrorResponse
+        {
+            success = false,
+            message = "No response from response formatter",
+            statusCode = HttpStatusCode.BadRequest
+        };
+
     }
 }

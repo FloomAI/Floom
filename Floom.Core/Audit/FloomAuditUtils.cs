@@ -1,25 +1,26 @@
 using Floom.Model;
 using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 
 namespace Floom.Audit;
 
 public class FloomAuditUtils
 {
     public static Dictionary<string, object> GetPipelineAttributes(
-        FloomRequest floomRequest,
-        FloomPromptRequest promptRequest,
+        RunFloomPipelineRequest runFloomPipelineRequest,
+        FloomRequest promptRequest,
         FloomPromptResponse promptResponse)
     {
         var attributes = new Dictionary<string, object>();
 
-        if (floomRequest.prompt != null)
-            attributes.Add("request", floomRequest.prompt);
-        if (floomRequest.variables != null)
-            attributes.Add("requestVariables", floomRequest.variables);
-        if (promptRequest.user != null)
-            attributes.Add("compiledPromptRequestUser", promptRequest.user);
-        if (promptRequest.system != null)
-            attributes.Add("compiledPromptRequestSystem", promptRequest.system);
+        if (runFloomPipelineRequest.prompt != null)
+            attributes.Add("request", runFloomPipelineRequest.prompt);
+        if (runFloomPipelineRequest.variables != null)
+            attributes.Add("requestVariables", runFloomPipelineRequest.variables);
+        if (promptRequest.Prompt?.UserPrompt != null)
+            attributes.Add("compiledPromptRequestUser", promptRequest.Prompt.UserPrompt);
+        if (promptRequest.Prompt?.SystemPrompt != null)
+            attributes.Add("compiledPromptRequestSystem", promptRequest.Prompt.SystemPrompt);
         if (promptResponse.values.FirstOrDefault()?.value != null)
             attributes.Add("promptResponse", promptResponse.values.First().value.ToString());
         if (promptResponse.tokenUsage?.processingTokens != null)

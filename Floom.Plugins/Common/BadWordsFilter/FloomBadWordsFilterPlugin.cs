@@ -1,7 +1,9 @@
 using System.Text.RegularExpressions;
+using Floom.Model;
 using Floom.Pipeline;
-using Floom.Pipeline.StageHandler.Model;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Model;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Microsoft.Extensions.Logging;
@@ -35,27 +37,30 @@ public class FloomBadWordsFilterPlugin: FloomPluginBase
 
             if (promptEvent != null)
             {
-                if (promptEvent.system != null)
+                if (promptEvent.SystemPrompt != null)
                 {
-                    textsToSanitize.Add((promptEvent.system, sanitized => promptEvent.system = sanitized));
+                    textsToSanitize.Add((promptEvent.SystemPrompt, sanitized => promptEvent.SystemPrompt = sanitized));
                 }
 
-                if (promptEvent.user != null)
+                if (promptEvent.UserPrompt != null)
                 {
-                    textsToSanitize.Add((promptEvent.user, (sanitized) => promptEvent.user = sanitized));
+                    textsToSanitize.Add((promptEvent.UserPrompt, (sanitized) => promptEvent.UserPrompt = sanitized));
                 }
             }
         }
         else if (pipelineContext.CurrentStage == PipelineExecutionStage.Response)
         {
-            var responseEvent = pipelineContext.GetEvents()
-                .OfType<ModelConnectorResultEvent>().MaxBy(e => e.Timestamp)
-                ?.Response;
+            var responseEvent = pipelineContext.GetEvents().OfType<ModelConnectorResult>().FirstOrDefault();
 
             if (responseEvent != null)
             {
-                responseEvent.values.ForEach(value => 
-                    textsToSanitize.Add((value.value, (sanitized) => value.value = sanitized)));
+                // iterate over all the values in the response and add them to the list
+                // make sure value is of type string
+                if(responseEvent.Data.type == DataType.String)
+                {
+                    var value = responseEvent.Data.value as string;
+                    textsToSanitize.Add((value as string, (sanitized) => value = sanitized)!);
+                }
             }
         }
 

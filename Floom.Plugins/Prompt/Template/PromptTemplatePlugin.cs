@@ -1,10 +1,11 @@
-using Floom.Model;
 using Floom.Pipeline;
-using Floom.Pipeline.StageHandler.Prompt;
+using Floom.Pipeline.Entities.Dtos;
+using Floom.Pipeline.Stages.Prompt;
 using Floom.Plugin.Base;
 using Floom.Plugin.Context;
 using Floom.Utils;
 using Microsoft.Extensions.Logging;
+using DataType = Floom.Pipeline.Entities.Dtos.DataType;
 
 namespace Floom.Plugins.Prompt.Template;
 
@@ -17,7 +18,7 @@ public class PromptTemplatePluginSettings : FloomPluginConfigBase
 
     protected override void Load(IDictionary<string, object> configuration)
     {
-        System = configuration.TryGetValue("system", out var apiKey) ? apiKey as string : string.Empty;
+        System = configuration.TryGetValue("system", out var system) ? system as string : string.Empty;
         User = configuration.TryGetValue("user", out var model) ? model as string : string.Empty;
     }
 }
@@ -42,34 +43,55 @@ public class PromptTemplatePlugin: FloomPluginBase
     public override async Task<PluginResult> Execute(PluginContext pluginContext, PipelineContext pipelineContext)
     {
         _logger.LogInformation($"Executing {GetType()}: {pluginContext.Package}");
-        
-        var promptRequest = new FloomPromptRequest();
+
+        var promptTemplateResult = new PromptTemplateResult();
         
         if (_settings.System != null)
         {
-            promptRequest.system = _settings.System.CompileWithVariables(pipelineContext.Request.variables);
+            promptTemplateResult.SystemPrompt = _settings.System.CompileWithVariables(pipelineContext.pipelineRequest.variables);
         }
 
         if(_settings.User != null)
         {
-            promptRequest.user = _settings.User.CompileWithVariables(pipelineContext.Request.variables);
+            promptTemplateResult.UserPrompt = _settings.User.CompileWithVariables(pipelineContext.pipelineRequest.variables);
         }
 
-        if (pipelineContext.Request.prompt != null)
+        if (pipelineContext.pipelineRequest.prompt != null)
         {
-            promptRequest.user = pipelineContext.Request.prompt.CompileWithVariables(pipelineContext.Request.variables);
+            promptTemplateResult.UserPrompt = pipelineContext.pipelineRequest.prompt.CompileWithVariables(pipelineContext.pipelineRequest.variables);
+        }
+
+        var responseFormatter = pipelineContext.Pipeline.Response?.Format?.First();
+
+        if (responseFormatter != null)
+        {
+            responseFormatter.Configuration.TryGetValue("type", out var responseType);
+            promptTemplateResult.ResponseType = ResponseFormat.FromString(responseType as string);
+
+            if (promptTemplateResult.ResponseType == DataType.JsonObject)
+            {
+                promptTemplateResult.UserPromptAddon = "return a JSON array, with JSON objects (without anything else) that looks exactly like class attached.";
+            }
+            
+            responseFormatter.Configuration.TryGetValue("format", out var responseFormat);
+            promptTemplateResult.ResponseFormat = responseFormat as string;
+            
+            responseFormatter.Configuration.TryGetValue("maxCharacters", out var maxCharacters);
+            promptTemplateResult.MaxCharacters = Convert.ToUInt32(maxCharacters);
+            
+            responseFormatter.Configuration.TryGetValue("maxSentences", out var maxSentences);
+            promptTemplateResult.MaxSentences = Convert.ToUInt32(maxSentences);
+            
+            responseFormatter.Configuration.TryGetValue("language", out var language);
+            promptTemplateResult.Language = language as string;
         }
         
         _logger.LogInformation($"Completed {GetType()} Successfully");
-
-        pipelineContext.AddEvent(new PromptTemplateResultEvent 
-        { 
-            ResultData = promptRequest,
-        });
-
+        
         return new PluginResult
         {
             Success = true,
+            Data = promptTemplateResult
         };
     }
 
