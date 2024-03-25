@@ -23,27 +23,27 @@ public class GeminiClient : IModelConnectorClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
 
-    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest promptRequest, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest floomRequest, string model)
     {
         var url = $"{MainUrl}/{model}:generateContent?key={ApiKey}";
         
         // Initialize the parts list with the user text by default
-        var partsList = new List<GeminiPart> { new GeminiPart { text = promptRequest.Prompt.UserPrompt } };
+        var partsList = new List<GeminiPart> { new GeminiPart { text = floomRequest.Prompt.UserPrompt } };
 
-        if (!string.IsNullOrEmpty(promptRequest.Prompt.UserPromptAddon))
+        if (!string.IsNullOrEmpty(floomRequest.Prompt.UserPromptAddon))
         {
-            partsList.Insert(0, new GeminiPart { text = promptRequest.Prompt.UserPromptAddon });
+            partsList.Insert(0, new GeminiPart { text = floomRequest.Prompt.UserPromptAddon });
         }
 
         // If the system property exists, insert it as the first element of the parts list
-        if (!string.IsNullOrEmpty(promptRequest.Prompt.SystemPrompt))
+        if (!string.IsNullOrEmpty(floomRequest.Prompt.SystemPrompt))
         {
-            partsList.Insert(0, new GeminiPart { text = promptRequest.Prompt.SystemPrompt });
+            partsList.Insert(0, new GeminiPart { text = floomRequest.Prompt.SystemPrompt });
         }
 
-        if (!string.IsNullOrEmpty(promptRequest.Context?.Context))
+        if (!string.IsNullOrEmpty(floomRequest.Context?.Context))
         {
-            partsList.Insert(0, new GeminiPart { text = promptRequest.Context.Context });
+            partsList.Insert(0, new GeminiPart { text = floomRequest.Context.Context });
         }
 
         var payload = new GeminiTextRequest()
@@ -80,18 +80,46 @@ public class GeminiClient : IModelConnectorClient
 
             var generatedTextParts = result.Candidates.FirstOrDefault()?.Content.Parts.Select(p => p.Text).ToList();
             
-            return new ModelConnectorResult
+            var modelConnectorResult = new ModelConnectorResult();
+            modelConnectorResult.Success = true;
+            if (floomRequest.Prompt.ResponseType == DataType.String)
             {
-                Success = true,
-                Data = new ResponseValue()
+                modelConnectorResult.Data = new ResponseValue()
                 {
                     type = DataType.String,
+                    format = ResponseFormat.FromDataType(DataType.String),
                     value = generatedTextParts.FirstOrDefault()
+                };
+            }
+            else if(floomRequest.Prompt.ResponseType == DataType.JsonObject)
+            {
+                var responseString = generatedTextParts.FirstOrDefault();
+                
+                try
+                {
+                    var jsonElement = JsonSerializer.Deserialize<JsonElement>(responseString);
+                    modelConnectorResult.Data = new ResponseValue()
+                    {
+                        type = DataType.JsonObject,
+                        format = ResponseFormat.FromDataType(DataType.JsonObject),
+                        value = jsonElement
+                    };
                 }
-            };
+                catch (JsonException)
+                {
+                    _logger.LogError("Error while deserializing response to JSON object");
+                    return new ModelConnectorResult()
+                    {
+                        Success = false,
+                        Message = "Error while deserializing response to JSON object",
+                        ErrorCode = ModelConnectorErrors.InvalidResponseFormat
+                    };
+                }
+            }
+
+            return modelConnectorResult;
         }
     }
-
 
     public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings, string model)
     {

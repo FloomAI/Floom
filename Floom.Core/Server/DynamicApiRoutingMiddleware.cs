@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using Floom.Pipeline.Entities.Dtos;
 
 namespace Floom.Server;
 
@@ -65,17 +66,26 @@ public class DynamicApiRoutingMiddleware
         {
             inputString = inputElement.GetString();
         }
-
+        object? responseTypeJson = null;
+        if (jsonDocument.RootElement.TryGetProperty("responseType", out var responseTypeElement))
+        {
+            responseTypeJson = responseTypeElement;
+        }
         // Construct the new request URL and body
         var newUrl = "http://localhost:4050/v1/pipelines/run";
         // Construct the payload object
-        var payload = new
+        var payload = new RunFloomPipelineRequest()
         {
             pipelineId = actualPipelineId,
             username = username,
             prompt = inputString
         };
-
+        
+        if (responseTypeJson != null)
+        {
+            payload.responseType = responseTypeJson;
+        }
+        
         try
         {
             var newBody = JsonSerializer.Serialize(payload);

@@ -7,4 +7,5 @@ public static class ModelConnectorErrors
     public static int InvalidApiKey = 3;
     public static int ModelOverloaded = 4;
     public static int UnsupportedResponseType = 5;
+    public static int InvalidResponseFormat = 6;
 }

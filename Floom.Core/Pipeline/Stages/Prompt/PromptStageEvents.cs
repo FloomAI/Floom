@@ -14,6 +14,7 @@ public class PromptTemplateResult
     public string? SystemPrompt { get; set; }
     public DataType ResponseType { get; set; } = DataType.String;
     public string? ResponseFormat { get; set; } = "text/plain";
+    public object? ResponseExample { get; set; }
     public uint MaxCharacters { get; set; } = 0;
     public uint MaxSentences { get; set; } = 0;
     public string? Language { get; set; } = "en"; // ISO 639-1 code

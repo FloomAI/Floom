@@ -4,15 +4,8 @@ public class RunFloomPipelineRequest
 {
     public string? pipelineId { get; set; } //Pipeline ID
     public string? username { get; set; } //User Name
-    public string chatId { get; set; } = ""; //Chat ID
     public string? prompt { get; set; } = ""; //User Input
     public Dictionary<string, string>? variables { get; set; } //Vars
-    public DataTransferType dataTransfer { get; set; }
     public IFormFile? file { get; set; }
-}
-
-public enum DataTransferType
-{
-    Base64 = 1,
-    //Url = 2
+    public object? responseType { get; set; }
 }

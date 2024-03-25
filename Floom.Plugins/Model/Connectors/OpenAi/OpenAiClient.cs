@@ -25,7 +25,7 @@ public class OpenAiClient : IModelConnectorClient
         _logger = FloomLoggerFactory.CreateLogger(GetType());
     }
     
-    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest prompt, string model)
+    public async Task<ModelConnectorResult> GenerateTextAsync(FloomRequest floomRequest, string model)
     {
         var modelConnectorResult = new ModelConnectorResult();
         
@@ -43,50 +43,50 @@ public class OpenAiClient : IModelConnectorClient
             };
 
             
-            if (!string.IsNullOrEmpty(prompt.Context?.Context))
+            if (!string.IsNullOrEmpty(floomRequest.Context?.Context))
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "system",
-                    content = prompt.Context.Context
+                    content = floomRequest.Context.Context
                 });
             }
             
-            if (!string.IsNullOrEmpty(prompt.Prompt.SystemPrompt))
+            if (!string.IsNullOrEmpty(floomRequest.Prompt.SystemPrompt))
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "system",
-                    content = prompt.Prompt.SystemPrompt
+                    content = floomRequest.Prompt.SystemPrompt
                 });
             }
 
             // Add User Prompt
-            if (prompt.Prompt.UserPrompt != null)
+            if (floomRequest.Prompt.UserPrompt != null)
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "user",
-                    content = prompt.Prompt.UserPrompt
+                    content = floomRequest.Prompt.UserPrompt
                 });
             }
             
-            if (prompt.Prompt.UserPromptAddon != null)
+            if (!string.IsNullOrEmpty(floomRequest.Prompt.UserPromptAddon))
             {
                 generateTextRequestBody.messages.Add(new Message()
                 {
                     role = "user",
-                    content = prompt.Prompt.UserPromptAddon
+                    content = floomRequest.Prompt.UserPromptAddon
                 });
             }
 
 
-            string requestBody = JsonSerializer.Serialize(generateTextRequestBody);
-            StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            var requestBody = JsonSerializer.Serialize(generateTextRequestBody);
+            var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
             // Call the API and get the response
             _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}chat/completions");
-            HttpResponseMessage response = await client.PostAsync($"{MainUrl}chat/completions", content);
+            var response = await client.PostAsync($"{MainUrl}chat/completions", content);
             
             var responseCode = response.StatusCode;
 
@@ -113,23 +113,52 @@ public class OpenAiClient : IModelConnectorClient
                 };
             }
             
-            string responseContent = await response.Content.ReadAsStringAsync();
-            GenerateTextResponseBody? chatResponse =
-                JsonSerializer.Deserialize<GenerateTextResponseBody>(responseContent);
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var  chatResponse = JsonSerializer.Deserialize<GenerateTextResponseBody>(responseContent);
 
             if (chatResponse == null)
             {
                 throw new Exception("Error while receiving response from OpenAI");
             }
 
-            //Fill Response
             modelConnectorResult.Success = true;
-            modelConnectorResult.Data = new ResponseValue()
+            if (floomRequest.Prompt.ResponseType == DataType.String)
             {
-                type = DataType.String,
-                format = ResponseFormat.FromDataType(DataType.String),
-                value = chatResponse.choices.First().message.content
-            };
+                modelConnectorResult.Data = new ResponseValue()
+                {
+                    type = DataType.String,
+                    format = ResponseFormat.FromDataType(DataType.String),
+                    value = chatResponse.choices?.First()?.message?.content
+                };
+            }
+            else if(floomRequest.Prompt.ResponseType == DataType.JsonObject)
+            {
+                var responseString = chatResponse.choices?.First()?.message?.content;
+                
+                // Removing Markdown code block annotation and backticks
+                responseString = responseString.Replace("```json", "").Replace("`", "").Trim();
+
+                try
+                {
+                    var jsonElement = JsonSerializer.Deserialize<JsonElement>(responseString);
+                    modelConnectorResult.Data = new ResponseValue()
+                    {
+                        type = DataType.JsonObject,
+                        format = ResponseFormat.FromDataType(DataType.JsonObject),
+                        value = jsonElement
+                    };
+                }
+                catch (JsonException)
+                {
+                    _logger.LogError("Error while deserializing response to JSON object");
+                    return new ModelConnectorResult()
+                    {
+                        Success = false,
+                        Message = "Error while deserializing response to JSON object",
+                        ErrorCode = ModelConnectorErrors.InvalidResponseFormat
+                    };
+                }
+            }
         }
         
         return modelConnectorResult;
