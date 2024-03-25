@@ -61,6 +61,11 @@ public class PromptTemplatePlugin: FloomPluginBase
             promptTemplateResult.UserPrompt = pipelineContext.pipelineRequest.prompt.CompileWithVariables(pipelineContext.pipelineRequest.variables);
         }
 
+        if (pipelineContext.pipelineRequest.responseType != null)
+        {
+            promptTemplateResult.ResponseExample = pipelineContext.pipelineRequest.responseType;
+        }
+
         var responseFormatter = pipelineContext.Pipeline.Response?.Format?.First();
 
         if (responseFormatter != null)
@@ -70,7 +75,8 @@ public class PromptTemplatePlugin: FloomPluginBase
 
             if (promptTemplateResult.ResponseType == DataType.JsonObject)
             {
-                promptTemplateResult.UserPromptAddon = "return a JSON array, with JSON objects (without anything else) that looks exactly like class attached.";
+                promptTemplateResult.UserPromptAddon = "Response must be a valid JSON array only, with only JSON objects (without introduction, explanation and description or anything that is not JSON Object) that looks exactly like JSON class: ";
+                promptTemplateResult.UserPromptAddon += promptTemplateResult.ResponseExample;
             }
             
             responseFormatter.Configuration.TryGetValue("format", out var responseFormat);
