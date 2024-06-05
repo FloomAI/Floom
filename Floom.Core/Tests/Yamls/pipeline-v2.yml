@@ -1,0 +1,80 @@
+name: Floom Pipeline
+
+jobs:
+  data:
+    source:
+      - name: Fetch Documents from AWS S3
+        uses: floom/data/source/s3
+        with:
+          aws-apnr: apnr://my-cv.us-east1.s3.aws.com
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    
+    ingest:
+      needs: data.source
+      steps:
+        - name: Convert documnets into RAW text
+          uses: floom/plugins/pdf-to-text
+
+        - name: Convert RAW text into JSON
+          uses: floom/functions/text-to-json
+
+  model:
+    - name: Open AI Model Connector
+      uses: floom/model/connectors/openai
+      with:
+        model: gpt-3.5-turbo
+        api-key: ${{ secrets.OPENAI_API_KEY }}
+
+  prompt:
+    needs: model
+    # runs-on: floom-local/floom-core
+    steps:
+      - name: Execute Chat Decision Tree
+        uses: pipeline-v2-chat-decision.yml
+        store_output: decision_output
+
+      - name: Execute Standalone AI Function
+        uses: floom/functions/standalone-ai-function
+        needs: "${{ decision_output.is_standalone == true }}"
+
+      - name: Execute History AI Function
+        uses: floom/functions/history-ai-function
+        needs: "${{ decision_output.is_standalone == false }}"
+
+  response:
+    needs: prompt
+    steps:
+      - name: Response Formatter
+        uses: floom/response/formatter 
+        with:
+          type: text
+          language: en-us
+          max-sentences: 3
+  
+     - name: Response Validator
+       uses: floom/plugins/bad-words-filter 
+       with:
+        disallow: ['pii', 'credit-cards']
+        language: en-us
+
+
+config:
+    secrets:
+      - name: AWS Secrets Manager
+        uses: floom/config/secrets/aws-secrets-manager
+        store_output: secrets
+
+    cost:
+    - name: Floom Cost Management
+      uses: floom/plugins/cost-management 
+      with:
+        limits:
+          user.day: 1000
+          pipeline.month: 600000
+			
+    cache:
+      - name: Floom Cache
+        uses: floom/plugins/cache 
+        with:
+          cache-type: memory

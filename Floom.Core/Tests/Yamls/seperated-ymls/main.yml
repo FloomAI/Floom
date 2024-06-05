@@ -1,0 +1,25 @@
+# main.flm
+version: 1.0.0
+description: "Main initialization file for Floom use case."
+imports:
+  - config.flm
+  - pipeline-v2-data.yml
+  - pipeline-v2-prompt.yml
+
+# Define global settings or variables if needed
+globals:
+  log_level: INFO
+  error_handling: true
+
+# Define entry points for the use case
+entry:
+  - name: Data Ingest Pipeline
+    triggers:
+      - on_deploy
+      - on_s3_event
+    pipeline: pipeline-v2-data.yml
+
+  - name: Main Pipeline
+    triggers:
+      - on_prompt
+    pipeline: pipeline-v2-prompt.yml

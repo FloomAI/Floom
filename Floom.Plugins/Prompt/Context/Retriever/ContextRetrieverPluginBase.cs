@@ -80,14 +80,11 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
         {
             var vectorStoreProvider = VectorStoresFactory.Create(_vectorStore);
             vectorStoreProvider.CollectionName = VectorStores.Utils.GetCollectionName(pipelineContext);
-            List<VectorSearchResult> results = await vectorStoreProvider.Search(
-                queryEmbeddings.First(),
-                topResults: 3
-            );
+            var results = new SimilarityScoreThresholdSearcher().GetRelevantDocuments(vectorStoreProvider, queryEmbeddings.First()).Result;
             vectorSearchResults.AddRange(results);
         }
 
-        foreach (var vectorSearchResult in vectorSearchResults.Take(3))
+        foreach (var vectorSearchResult in vectorSearchResults)
         {
             mergedResults += $"{vectorSearchResult.text}. \n";
         }
@@ -245,15 +242,11 @@ public abstract class ContextRetrieverPluginBase : FloomPluginBase
 
             #region Send split content to EmbeddingsProvider (OpenAI) (dont worry about conf at first)
         
-            //# TODO: Temporary - Reduce to 3 pages
-            //splitText = splitText.GetRange(0, 20);
-        
             _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors");
-
-        
-            _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
-        
+            
             var embeddingsResult = await embeddingsProvider.GetEmbeddingsAsync(splitText);
+
+            _logger.LogInformation($"Getting embeddings from Pipeline Model Connectors finished");
 
             if (embeddingsResult.Success == false)
             {

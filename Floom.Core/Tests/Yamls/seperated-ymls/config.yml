@@ -1,0 +1,47 @@
+# config.flm
+version: 1.0.0
+description: "Configuration file for Floom use case."
+
+config:
+  openai_model:
+    name: Open AI Model
+    uses: floom/model/connectors/openai
+    with:
+      model: gpt-3.5-turbo
+      api-key: ${{ secrets.OPENAI_API_KEY }}
+      max_tokens: 2048
+      temperature: 0.7
+
+  floom_internal_database:
+    name: Floom Internal Database (MongoDB)
+    uses: floom/internal/database/mongodb
+    with:
+      host: localhost
+      username: root
+      password: MyFloom
+      default_collection_name: "cvs"
+      
+  floom_vector_database:
+    name: Floom Internal Vector Database (Milvus)
+    uses: floom/internal/database/Milvus
+    with: "Milvus"
+      host: localhost
+      port: 19530
+      username: root
+      password: Milvus
+
+  floom_cost_management:
+    name: Floom Cost Management
+    uses: floom/plugins/cost-management 
+    with:
+      limits:
+        user:
+        - day: 1000
+        pipeline:
+        - month: 600000
+			
+  floom_cache:
+    name: Floom Cache
+    uses: floom/plugins/cache 
+    with:
+      cache-type: memory

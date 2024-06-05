@@ -83,7 +83,7 @@ public class OpenAiClient : IModelConnectorClient
 
             var requestBody = JsonSerializer.Serialize(generateTextRequestBody);
             var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
-
+            _logger.LogInformation("Calling OpenAI API {0} with request body: {1}", $"{MainUrl}chat/completions", requestBody);
             // Call the API and get the response
             _logger.LogInformation("Calling OpenAI API {0}", $"{MainUrl}chat/completions");
             var response = await client.PostAsync($"{MainUrl}chat/completions", content);
@@ -114,6 +114,8 @@ public class OpenAiClient : IModelConnectorClient
             }
             
             var responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation("Response from OpenAI: {0}", responseContent);
+            
             var  chatResponse = JsonSerializer.Deserialize<GenerateTextResponseBody>(responseContent);
 
             if (chatResponse == null)
@@ -199,26 +201,26 @@ public class OpenAiClient : IModelConnectorClient
 
     public async Task<FloomOperationResult<List<List<float>>>> GetEmbeddingsAsync(List<string> strings, string model)
     {
-        List<List<float>> pagesEmbeddings = new List<List<float>>();
+        var pagesEmbeddings = new List<List<float>>();
 
-        using (HttpClient client = new HttpClient())
+        using (var client = new HttpClient())
         {
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", this.ApiKey);
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
             // Create the request message
-            OpenAiEmbeddings.EmbeddingRequest request = new OpenAiEmbeddings.EmbeddingRequest
+            var request = new OpenAiEmbeddings.EmbeddingRequest
             {
                 input = strings,
                 model = model
             };
 
-            string requestBody = JsonSerializer.Serialize(request);
-            StringContent content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+            var requestBody = JsonSerializer.Serialize(request);
+            var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
 
             // Call the API and get the response
             _logger.LogInformation("Calling OpenAI embeddings API {0}", $"{MainUrl}embeddings");
-            HttpResponseMessage response = await client.PostAsync($"{MainUrl}embeddings", content);
+            var response = await client.PostAsync($"{MainUrl}embeddings", content);
             
             if (response.StatusCode == HttpStatusCode.TooManyRequests)
             {
@@ -241,10 +243,9 @@ public class OpenAiClient : IModelConnectorClient
                 return FloomOperationResult<List<List<float>>>.CreateFailure(errorMessage);
             }
 
-            //response.EnsureSuccessStatusCode();
-            string responseContent = await response.Content.ReadAsStringAsync();
+            var responseContent = await response.Content.ReadAsStringAsync();
 
-            OpenAiEmbeddings.EmbeddingResponse? embeddingResponse =
+            var embeddingResponse =
                 JsonSerializer.Deserialize<OpenAiEmbeddings.EmbeddingResponse>(responseContent);
 
             if (embeddingResponse == null)

@@ -17,6 +17,9 @@ build/
 Floom.Core/Certificates/*
 # Common IntelliJ Platform excludes
 
+Floom.Python/__pycache__/*
+Floom.Python/package/*
+
 # User specific
 **/.idea/**/workspace.xml
 **/.idea/**/tasks.xml

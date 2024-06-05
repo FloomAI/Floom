@@ -1,0 +1,38 @@
+name: Floom Pipeline
+
+jobs:
+  execute_prompt:
+    steps:
+      - name: Execute Chat Decision Tree
+        uses: floom/functions/chat-decision-tree (pipeline-v2-chat-decision)
+        with:
+          model: ${{ config.openai_model }}
+          prompt: ${{ this.prompt }}
+          history: ${{ this.chat_history }}
+          
+      - name: Execute Standalone AI Function
+        uses: floom/functions/standalone-ai-function
+        needs: "${{ jobs.execute_prompt.output.decision_output == 'standalone' }}"
+
+      - name: Execute History AI Function
+        uses: floom/functions/history-ai-function
+        needs: "${{ jobs.execute_prompt.output.decision_output == 'history' }}"
+
+  format_response:
+    needs: execute_prompt
+    steps:
+      - name: Response Validator
+        uses: floom/plugins/bad-words-filter 
+        with:
+          input: ${{ jobs.execute_prompt.output }}
+          disallow: ['pii', 'credit-cards']
+          language: en-us
+        output:
+          this.result: ${{ result }}
+
+      - name: Post Pipeline Response to Slack API
+        run: |
+          curl -X POST "https://api.slack.com/endpoint" \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer ${{ secrets.SLACK_API_TOKEN }}" \
+               -d '{"key": "value", "response": "${{ this.result }}"}'

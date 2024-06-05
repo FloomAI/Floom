@@ -1,0 +1,37 @@
+name: Floom Pipeline
+
+jobs:
+  fetch_documents:
+    steps:
+      - name: Fetch Documents from AWS S3
+        uses: floom/data/source/s3
+        with:
+          aws-apnr: my-cv.s3.aws.com
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        output:
+          s3_data: ${{ result.document }}
+
+  convert_documents:
+    needs: fetch_documents
+    steps:
+      - name: Convert documents into RAW text
+        uses: floom/plugins/pdf-to-text
+        with:
+          input: ${{ jobs.fetch_documents.output.s3_data }}
+        output:
+          raw_text: ${{ result.raw_text }}
+
+      - name: Convert RAW text into JSON
+        uses: floom/functions/text-to-json
+        with:
+          input: ${{ raw_text }}
+        output:
+          json_result: ${{ result.json }}
+      
+      - name: Insert JSON into MongoDB
+        uses: floom/plugins/database/mongodb
+        with:
+          collection: ${{ this.config.floom_internal_database.default_collection_name }}
+          database: ${{ this.config.floom_internal_database }}
+          input: ${{ json_result }}

@@ -1,0 +1,32 @@
+name: Floom Pipeline
+
+globals:
+  collection: ${{ this.config.floom_internal_database.default_collection_name }}
+  database: ${{ this.config.floom_internal_database }}
+
+jobs:
+  execute:
+    steps:
+      - name: Convert Prompt to Mongodb Query
+        uses: floom/functions/convert-prompt-mongodb-query
+        with:
+          collection: ${{ this.globals.collection }}
+          database: ${{ this.globals.database }}
+          user: ${{ this.prompt }}
+          system: "You are Mongo DB expert, specializing in writing consise MongoDB structures and queries."
+
+      - name: Execute Mongodb Query
+        uses: floom/functions/execture-mongo-db-query
+        with:
+          collection: ${{ this.globals.collection }}
+          database: ${{ this.globals.database }}
+        output:
+          execution_output: ${{ result }}
+
+      - name: Response Formatter
+        uses: floom/functions/response-formatter
+        with:
+          input: ${{ execution_output }}
+          type: text
+        output:
+          this.result: ${{ result }}

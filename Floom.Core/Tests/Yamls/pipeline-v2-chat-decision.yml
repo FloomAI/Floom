@@ -1,0 +1,24 @@
+name: Pipeline Chat Decision
+description: "Decides whether answer is in chat history, or a new standalone question must by created"
+
+jobs:
+  prompt:
+    steps:
+      - name: Default Prompt Template
+        uses: floom/prompt/templates/default
+        with:
+          system: "Given a chat history and the latest user question 
+              which might reference context in the chat history, formulate a standalone question
+              which can be understood without the chat history. Do NOT answer the question,
+              just reformulate it if needed and otherwise return it as is" 
+
+  response:
+    needs: prompt
+    steps:
+      - name: Response Formatter
+        uses: floom/response/formatter 
+        with:
+          type: object
+          structure:
+            "is_standalone": true
+            "question": "the actual question"
