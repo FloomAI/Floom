@@ -41,6 +41,8 @@
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0"/>
         <PackageReference Include="YamlDotNet" Version="13.7.1"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="7.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>

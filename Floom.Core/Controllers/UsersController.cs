@@ -1,4 +1,7 @@
+using System.Security.Claims;
 using Floom.Auth;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Floom.Controllers;
