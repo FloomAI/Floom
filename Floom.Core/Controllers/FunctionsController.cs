@@ -1,6 +1,8 @@
+using System.Net.Http.Headers;
 using Floom.Auth;
 using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Floom.Controllers;
 
@@ -32,10 +34,10 @@ public class FunctionsController : ControllerBase
                 var userId = HttpContextHelper.GetUserIdFromHttpContext();
 
                 // 2. Deploy the function
-                var functionUrl = await _functionsService.DeployFunctionAsync(filePath, userId);
+                var functionName = await _functionsService.DeployFunctionAsync(filePath, userId);
 
-                // 3. Return the URL
-                return Ok(functionUrl);
+                // return JSON with message, function name, which says, function X deployed successfully
+                return Ok(new { message = $"Function {functionName} deployed successfully" });
             }
             finally
             {
@@ -51,10 +53,18 @@ public class FunctionsController : ControllerBase
         [HttpPost("run")]
         public async Task<IActionResult> RunFunction([FromBody] RunFunctionRequest request)
         {
-        var userId = HttpContextHelper.GetUserIdFromHttpContext();
-        var result = await _functionsService.RunFunctionAsync(userId, request.function, request.prompt);
-        return Ok(result);
-        }   
+            var userId = HttpContextHelper.GetUserIdFromHttpContext();
+            var result = await _functionsService.RunFunctionAsync(userId, request.function, request.prompt);
+            return Ok(result);
+        }
+
+        [HttpGet("list")]
+        public async Task<IActionResult> ListFunctions()
+        {
+            var userId = HttpContextHelper.GetUserIdFromHttpContext();
+            var functions = await _functionsService.ListFunctionsAsync(userId);
+            return Ok(functions);
+        }
 }
 
 public class RunFunctionRequest

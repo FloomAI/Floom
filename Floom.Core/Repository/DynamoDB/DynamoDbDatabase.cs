@@ -156,4 +156,9 @@ public class DynamoDbDatabase<T> : IDatabase<T> where T : DatabaseEntity, new()
             }
         }
     }
+
+    Task<IEnumerable<T>> IDatabase<T>.ReadAllByCondition(Expression<Func<T, bool>> condition)
+    {
+        throw new NotImplementedException();
+    }
 }

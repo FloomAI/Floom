@@ -13,6 +13,7 @@ public interface IRepository<T> where T : DatabaseEntity
     Task<IEnumerable<T>> GetAll(string id, string uniqueKey);
     Task<T?> FindByCondition(Expression<Func<T, bool>> condition);
     Task<T?> FindByAttributesAsync(Dictionary<string, object> attributes);
+    Task<IEnumerable<T>> ListByConditionAsync(Expression<Func<T, bool>> condition);
 }
 
 public class Repository<T> : IRepository<T> where T : DatabaseEntity
@@ -59,10 +60,15 @@ public class Repository<T> : IRepository<T> where T : DatabaseEntity
     public async Task<T?> FindByCondition(Expression<Func<T, bool>> condition)
     {
         return await _database.ReadByCondition(condition);
-    }
+    }   
 
     public async Task<T?> FindByAttributesAsync(Dictionary<string, object> attributes)
     {
         return await _database.ReadByAttributes(attributes);
+    }
+
+    public async Task<IEnumerable<T>> ListByConditionAsync(Expression<Func<T, bool>> condition)
+    {
+        return await _database.ReadAllByCondition(condition);
     }
 }

@@ -71,6 +71,11 @@ public class MongoDatabase<T> : IDatabase<T> where T : DatabaseEntity
 
     }
     
+    public async Task<IEnumerable<T>> ReadAllByCondition(Expression<Func<T, bool>> condition)
+    {
+        return await _collection.Find(condition).ToListAsync();
+    }
+
     public async Task Upsert(T entity, string uid, string column)
     {
         var filter = Builders<T>.Filter.Eq(column, uid);

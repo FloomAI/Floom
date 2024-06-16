@@ -10,6 +10,7 @@ public interface IDatabase<T> where T : DatabaseEntity
     public Task<T?> ReadByAttributes(Dictionary<string, object> attributes);
     Task<IEnumerable<T>> ReadAll();
     Task<IEnumerable<T>> ReadAll(string id, string uniqueKey);
+    Task<IEnumerable<T>> ReadAllByCondition(Expression<Func<T, bool>> condition);
     Task Upsert(T entity, string uid, string column);
     Task Delete(string id, string uniqueKey);
 }

@@ -241,7 +241,7 @@ FloomLoggerFactory.Configure(loggerFactory);
 
 app.Lifetime.ApplicationStarted.Register(FloomInitCallback);
 Console.WriteLine("Starting app");
-app.Run("http://*:5000"); //port inside docker
+app.Run("http://*:4050"); //port inside docker
 return;
 
 async void FloomInitCallback()

@@ -1,15 +1,18 @@
 using System.IO.Compression;
 using System.Text;
-using System.Text.Json;
 using Floom.Assets;
 using Floom.Repository;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
+
+    Task<List<FunctionEntity>> ListFunctionsAsync(string userId);
 }
 
 public class FunctionsService : IFunctionsService
@@ -103,7 +106,7 @@ public class FunctionsService : IFunctionsService
                     userId = userId
                 };
                 await _repository.Insert(functionEntity);
-                return functionEntity.Id;
+                return functionEntity.name;
             }
         }
         finally
@@ -118,6 +121,7 @@ public class FunctionsService : IFunctionsService
 
     public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt)
     {
+        Console.WriteLine("RunFunctionAsync userId:" + userId);
         // 1. Get the Function entity by userId and functionName
         var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
         var functionEntity = await _repository.FindByCondition(f => f.name == normalizedFunctionName && f.userId == userId);
@@ -127,12 +131,17 @@ public class FunctionsService : IFunctionsService
             throw new Exception("Function not found.");
         }
 
+        Console.WriteLine("FunctionEntity: "+ functionEntity.Id + ",name: " + functionEntity.name + ", promptUrl: " + functionEntity.promptUrl);
+        Console.WriteLine("UserPrompt: " + userPrompt);
         // 2. Get the promptUrl file
         var promptFileUrl = functionEntity.promptUrl;
 
         // 3. Download the prompt.py file
+        Console.WriteLine("Downloading prompt file from S3");
         var promptFileStream = await _floomAssetsRepository.DownloadFileFromS3Async(promptFileUrl);
+        Console.WriteLine("Downloaded prompt file from S3");
         var promptFilePath = Path.GetTempFileName();
+        // copy file to file stream
         using (var fileStream = new FileStream(promptFilePath, FileMode.Create, FileAccess.Write))
         {
             await promptFileStream.CopyToAsync(fileStream);
@@ -140,26 +149,34 @@ public class FunctionsService : IFunctionsService
 
         try
         {
-            // 4. Prepare the request content
-            var requestContent = new MultipartFormDataContent();
-            var config = new LambdaRunConfig
+            // Prepare and send the HTTP request
+            var client = new HttpClient();
+            var requestTemp = new HttpRequestMessage(HttpMethod.Post, "https://i4yijg36th.execute-api.us-east-1.amazonaws.com/prompt");
+
+            var form = new MultipartFormDataContent();
+
+            // Add the file
+            var fileContent = new StreamContent(new FileStream(promptFilePath, FileMode.Open, FileAccess.Read));
+            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
+            form.Add(fileContent, "file", "prompt.py");
+
+            // Add the config
+            var config = new
             {
-                Input = userPrompt,
-                Variables = new Dictionary<string, string> { { "language", "hebrew" } },
-                ConfigSettings = new Dictionary<string, string>(),
-                Env = new Dictionary<string, string> { { "OPENAI_API_KEY", "REMOVED-1kYJtfEErUPPgpo11MdfT3BlbkFJ5x8f10AGqx7MpZda0ezP" } }
+                input = userPrompt,
+                variables = new { language = "hebrew" },
+                config = new { },
+                env = new { OPENAI_API_KEY = "REMOVED-1kYJtfEErUPPgpo11MdfT3BlbkFJ5x8f10AGqx7MpZda0ezP" }
             };
+            var configJson = JsonConvert.SerializeObject(config);
+            form.Add(new StringContent(configJson, Encoding.UTF8, "application/json"), "config");
 
-            var configJson = JsonSerializer.Serialize(config);
-            requestContent.Add(new StreamContent(new FileStream(promptFilePath, FileMode.Open)), "file", "prompt.py");
-            requestContent.Add(new StringContent(configJson, Encoding.UTF8, "application/json"), "config");
+            requestTemp.Content = form;
 
-            // 5. Execute the HTTP request to run the lambda function
-            using (var response = await _httpClient.PostAsync("https://i4yijg36th.execute-api.us-east-1.amazonaws.com/prompt", requestContent))
-            {
-                response.EnsureSuccessStatusCode();
-                return await response.Content.ReadAsStringAsync();
-            }
+            var response = await client.SendAsync(requestTemp);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            return responseContent;
         }
         finally
         {
@@ -169,6 +186,12 @@ public class FunctionsService : IFunctionsService
                 File.Delete(promptFilePath);
             }
         }
+    }
+
+    public async Task<List<FunctionEntity>> ListFunctionsAsync(string userId)
+    {
+        var functions = await _repository.ListByConditionAsync(f => f.userId == userId);
+        return functions.ToList();
     }
 }
 
