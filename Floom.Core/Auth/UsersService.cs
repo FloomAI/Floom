@@ -13,6 +13,7 @@ public class RegisterUserResponse
 public interface IUsersService
 {
     Task<RegisterUserResponse> RegisterGuestUserAsync();
+    Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email);
 }
 
 public class UsersService : IUsersService
@@ -35,12 +36,42 @@ public class UsersService : IUsersService
             username = FloomUsernameGenerator.GenerateTemporaryUsername(),
             nickname = FloomUsernameGenerator.GenerateTemporaryNickname()
         };
-        await _userRepository.Insert(user);
+        return await RegisterUserAsync(user);
+    }
 
+    public async Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email)
+    {
+        var existingUser = await _userRepository.Get(email, "emailAddress");
+
+        if (existingUser != null && existingUser.registrationProvider == provider)
+        {
+            return await GenerateApiKeyForUserAsync(existingUser);
+        }
+
+        var user = new UserEntity
+        {
+            registrationProvider = provider,
+            validated = true,
+            type = "user",
+            emailAddress = email,
+            username = FloomUsernameGenerator.GenerateTemporaryUsername(),
+            nickname = FloomUsernameGenerator.GenerateTemporaryNickname()
+        };
+        return await RegisterUserAsync(user);
+    }
+
+    private async Task<RegisterUserResponse> RegisterUserAsync(UserEntity user)
+    {
+        await _userRepository.Insert(user);
+        return await GenerateApiKeyForUserAsync(user);
+    }
+
+    private async Task<RegisterUserResponse> GenerateApiKeyForUserAsync(UserEntity user)
+    {
         var apiKey = new ApiKeyEntity
         {
             userId = user.Id,
-            key =  ApiKeyUtils.GenerateApiKey()
+            key = ApiKeyUtils.GenerateApiKey()
         };
 
         await _apiKeyRepository.Insert(apiKey);

@@ -1,30 +1,16 @@
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Floom.Assets;
 using Floom.Audit;
 using Floom.Auth;
 using Floom.Config;
-using Floom.Events;
 using Floom.Logs;
-using Floom.Pipeline;
-using Floom.Pipeline.Stages.Model;
-using Floom.Pipeline.Stages.Prompt;
-using Floom.Pipeline.Stages.Response;
-using Floom.Plugin.Context;
-using Floom.Plugin.Loader;
-using Floom.Plugin.Manifest;
 using Floom.Repository;
 using Floom.Repository.DynamoDB;
 using Floom.Repository.MongoDb;
-using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using MongoDB.Driver;
-using YamlDotNet.Serialization;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.OAuth;
@@ -105,7 +91,7 @@ builder.Services.AddApiVersioning(o =>
         new MediaTypeApiVersionReader("ver"));
 });
 
-// builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpContextAccessor();
 
 // builder.Services.AddVersionedApiExplorer(
 //     options =>
@@ -119,29 +105,13 @@ builder.Services.AddApiVersioning(o =>
 builder.Services.AddHttpClient();
 
 builder.Services.AddSingleton<IMongoClient>(MongoConfiguration.CreateMongoClient());
-builder.Services.AddSingleton<EventsManager>();
 
 // // Adding services to DI container
-builder.Services.AddScoped<IPipelinesService, PipelinesService>();
-builder.Services.AddTransient(provider => new Lazy<IPipelinesService>(provider.GetRequiredService<IPipelinesService>));
+builder.Services.AddScoped<IFunctionsService, FunctionsService>();
+builder.Services.AddTransient(provider => new Lazy<IFunctionsService>(provider.GetRequiredService<IFunctionsService>));
 
 builder.Services.AddScoped<IUsersService, UsersService>();
 
-builder.Services.AddSingleton<IPluginLoader, PluginLoader>();
-builder.Services.AddSingleton<IPluginContextCreator, PluginContextCreator>();
-
-builder.Services.AddSingleton<IPluginManifestLoader, PluginManifestLoader>();
-builder.Services.AddTransient(provider => new Lazy<IPluginManifestLoader>(provider.GetRequiredService<IPluginManifestLoader>));
-
-builder.Services.AddScoped<IPipelineCommitter, PipelineCommitter>();
-builder.Services.AddTransient(provider => new Lazy<IPipelineCommitter>(provider.GetRequiredService<IPipelineCommitter>()));
-
-builder.Services.AddScoped<IPipelineExecutor, PipelineExecutor>();
-builder.Services.AddTransient(provider => new Lazy<IPipelineExecutor>(provider.GetRequiredService<IPipelineExecutor>()));
-
-builder.Services.AddScoped<IModelStageHandler, ModelStageHandler>();
-builder.Services.AddScoped<IPromptStageHandler, PromptStageHandler>();
-builder.Services.AddScoped<IResponseStageHandler, ResponseStageHandler>();
 
 builder.Services.AddSingleton<FloomAssetsRepository>();
 builder.Services.AddSingleton<FloomAuditService>();
@@ -296,15 +266,6 @@ async void FloomInitCallback()
     // Generate Initial Api Key
     // var apiKeyInitializer = new ApiKeyInitializer(repositoryFactory);
     // apiKeyInitializer.Initialize();
-
-    var pluginManifestLoader = app.Services.GetRequiredService<IPluginManifestLoader>();
-    await pluginManifestLoader.LoadAndUpdateManifestsAsync();
-
-    // Get an instance of EventsManager
-    var eventsManager = app.Services.GetService<EventsManager>();
-
-    // Call the OnFloomStarts method
-    eventsManager?.OnFloomStarts();
 
     // Generate Floom Assets Repository
     FloomAssetsRepository.Instance.Initialize(repositoryFactory);

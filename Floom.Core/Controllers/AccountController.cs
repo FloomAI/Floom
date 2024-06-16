@@ -1,3 +1,4 @@
+using Floom.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -12,6 +13,21 @@ namespace Floom.Controllers;
 [ApiVersion("1.0")]
 public class AccountController : ControllerBase
 {
+    private readonly IUsersService _service;
+
+    public AccountController(IUsersService service)
+    {
+        _service = service;
+    }
+
+    [HttpPost("RegisterGuest")]
+    public async Task<IActionResult> Register()
+    {
+        var apiKey = await _service.RegisterGuestUserAsync();
+        return Ok(apiKey);
+    }
+
+
     [HttpGet("google-login")]
     public IActionResult Login()
     {
@@ -27,28 +43,24 @@ public class AccountController : ControllerBase
         if (!result.Succeeded)
             return BadRequest("Google authentication failed");
 
-        // Generate a session token (for simplicity, using a GUID here)
-        var sessionToken = Guid.NewGuid().ToString();
-
-        // Retrieve user email from claims
         var emailClaim = result.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        
+        if (string.IsNullOrEmpty(emailClaim))
+            return BadRequest("No email claim found");
 
-        // Set session token as a cookie
-        HttpContext.Response.Cookies.Append("SessionToken", sessionToken);
+        var response = await _service.RegisterOrLoginUserAsync("google", emailClaim);
+
+        // Generate a session token (for simplicity, using a GUID here)
+        var sessionToken = response.ApiKey;
+
+        // Set cookies
+        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, new CookieOptions { });
+        HttpContext.Response.Cookies.Append("Username", response.Username, new CookieOptions { });
+        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, new CookieOptions { });
 
         // Return JSON response with session token
         return Redirect("http://localhost:3000");
     }
-
-    [HttpGet("logout")]
-    [Authorize]
-    public async Task<IActionResult> Logout()
-    {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        HttpContext.Response.Cookies.Delete("SessionToken");
-        return Ok("Logged out");
-    }
-
 
     [HttpGet("github-login")]
     public IActionResult GitHubLogin()
@@ -65,10 +77,29 @@ public class AccountController : ControllerBase
         if (!result.Succeeded)
             return BadRequest("GitHub authentication failed");
 
-        var sessionToken = Guid.NewGuid().ToString();
         var emailClaim = result.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+        if (string.IsNullOrEmpty(emailClaim))
+            return BadRequest("No email claim found");
 
-        HttpContext.Response.Cookies.Append("SessionToken", sessionToken);
+        var response = await _service.RegisterOrLoginUserAsync("github", emailClaim);
+
+        // Set cookies without HttpOnly flag so they can be accessed by JavaScript
+        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, new CookieOptions { Secure = true });
+        HttpContext.Response.Cookies.Append("Username", response.Username, new CookieOptions { Secure = true });
+        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, new CookieOptions { Secure = true });
+
         return Redirect("http://localhost:3000");
+    }
+
+
+    [HttpGet("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        HttpContext.Response.Cookies.Delete("SessionToken");
+        HttpContext.Response.Cookies.Delete("Username");
+        HttpContext.Response.Cookies.Delete("Nickname");
+        return Ok("Logged out");
     }
 }

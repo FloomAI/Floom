@@ -1,0 +1,8 @@
+manifest:
+    name: simple-openai-prompt
+    runtime: 
+        language: python
+        framework: langchain/2.1
+
+    entrypoint:
+        prompt: prompt.py

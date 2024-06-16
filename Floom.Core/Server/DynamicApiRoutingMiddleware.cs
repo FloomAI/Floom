@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Text.Json;
-using Floom.Pipeline.Entities.Dtos;
 
 namespace Floom.Server;
 
@@ -74,6 +73,7 @@ public class DynamicApiRoutingMiddleware
         // Construct the new request URL and body
         var newUrl = "http://localhost:4050/v1/pipelines/run";
         // Construct the payload object
+        /*
         var payload = new RunFloomPipelineRequest()
         {
             pipelineId = actualPipelineId,
@@ -84,10 +84,11 @@ public class DynamicApiRoutingMiddleware
         if (responseTypeJson != null)
         {
             payload.responseType = responseTypeJson;
-        }
+        }*/
         
         try
         {
+            /*
             var newBody = JsonSerializer.Serialize(payload);
 
             var requestMessage = new HttpRequestMessage(HttpMethod.Post, newUrl)
@@ -133,7 +134,7 @@ public class DynamicApiRoutingMiddleware
             using (var responseStream = await response.Content.ReadAsStreamAsync())
             {
                 await responseStream.CopyToAsync(context.Response.Body);
-            }
+            }*/
         }
         catch (HttpRequestException ex)
         {

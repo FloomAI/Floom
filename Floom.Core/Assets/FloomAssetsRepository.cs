@@ -1,4 +1,5 @@
 using Amazon.S3;
+using Amazon.S3.Model;
 using Amazon.S3.Transfer;
 using Floom.Base;
 using Floom.Data;
@@ -171,6 +172,75 @@ public class FloomAssetsRepository : FloomSingletonBase<FloomAssetsRepository>
         }
     }
     
+
+    public async Task<string?> UploadPythonFileToAwsBucket(IFormFile file)
+    {
+        try
+        {
+            var checksum = await FileUtils.CalculateChecksumAsync(file);
+
+            var assetId = ObjectId.GenerateNewId().ToString();
+            var fileExtension = Path.GetExtension(file.FileName);
+            var storedFile = $"{assetId}{fileExtension}";
+
+            // Specify your bucket name
+            var bucketName = Environment.GetEnvironmentVariable("FLOOM_S3_FUNCTIONS_BUCKET") ?? "empty_bucket";
+
+            // Create a client
+            using (var client = new AmazonS3Client())
+            {
+                using (var newMemoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(newMemoryStream);
+
+                    var uploadRequest = new TransferUtilityUploadRequest
+                    {
+                        InputStream = newMemoryStream,
+                        Key = storedFile,
+                        BucketName = bucketName,
+                        CannedACL = S3CannedACL.Private
+                    };
+
+                    var transferUtility = new TransferUtility(client);
+                    await transferUtility.UploadAsync(uploadRequest);
+                }
+            }
+
+            // Get file URL from S3
+            var fileUrl = $"https://{bucketName}.s3.amazonaws.com/{storedFile}";
+
+            return fileUrl;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred while creating file.");
+            return null;
+        }
+    }
+
+    public async Task<Stream> DownloadFileFromS3Async(string fileUrl)
+    {
+        var uri = new Uri(fileUrl);
+        var bucketName = uri.Host.Split('.')[0];
+        var key = uri.AbsolutePath.Substring(1); // Remove leading '/'
+
+        using (var client = new AmazonS3Client())
+        {
+            var request = new GetObjectRequest
+            {
+                BucketName = bucketName,
+                Key = key
+            };
+
+            var response = await client.GetObjectAsync(request);
+            var memoryStream = new MemoryStream();
+            await response.ResponseStream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0; // Reset stream position for reading
+            return memoryStream;
+        }
+    }
+
+
     public async Task<FloomAsset?> GetAssetById(string assetId)
     {
         var assetEntity = await _repository.Get(assetId, "_id");

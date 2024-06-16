@@ -6,6 +6,7 @@ namespace Floom.Auth;
 [CollectionName("users")]
 public class UserEntity : DatabaseEntity
 {
+    public string registrationProvider { get; set; }
     public string type { get; set; }
     public bool validated { get; set; }
     public string emailAddress { get; set; } = string.Empty;

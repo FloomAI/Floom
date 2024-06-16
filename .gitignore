@@ -69,3 +69,5 @@ bld/
 [Oo]ut/
 
 Floom.Core/appsettings.json
+Floom.Core/appsettings.json
+build.sh
