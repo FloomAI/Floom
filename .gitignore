@@ -15,6 +15,7 @@ TestResults/*
 Todos.txt
 build/
 Floom.Core/Certificates/*
+Certificates/*
 # Common IntelliJ Platform excludes
 
 Floom.Python/__pycache__/*
