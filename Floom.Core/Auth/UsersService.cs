@@ -14,6 +14,8 @@ public interface IUsersService
 {
     Task<RegisterUserResponse> RegisterGuestUserAsync();
     Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email);
+
+    Task<Boolean> LogoutUserByApiKeyAsync(string apiKey);
 }
 
 public class UsersService : IUsersService
@@ -82,5 +84,12 @@ public class UsersService : IUsersService
             Username = user.username,
             Nickname = user.nickname
         };
+    }
+
+    async Task<bool> IUsersService.LogoutUserByApiKeyAsync(string apiKey)
+    {
+        await _apiKeyRepository.Delete(apiKey, "key");
+
+        return true;
     }
 }

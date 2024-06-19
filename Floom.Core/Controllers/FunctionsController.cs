@@ -1,8 +1,6 @@
-using System.Net.Http.Headers;
 using Floom.Auth;
 using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
 
 namespace Floom.Controllers;
 

@@ -2,15 +2,17 @@ using Floom.Auth;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-
+using Newtonsoft.Json.Linq;
+using Microsoft.AspNetCore.Cors;
+using Floom.Utils;
 namespace Floom.Controllers;
 
 [ApiController]
 [Route("/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
+[EnableCors]
 public class AccountController : ControllerBase
 {
     private readonly IUsersService _service;
@@ -31,13 +33,18 @@ public class AccountController : ControllerBase
     [HttpGet("google-login")]
     public IActionResult Login()
     {
-        var properties = new AuthenticationProperties { RedirectUri = "/v1/account/google-response" };
+        Console.WriteLine("Google login");
+        var properties = new AuthenticationProperties 
+        { 
+            RedirectUri = "https://api.floom.ai/v1/account/google-response" 
+        };
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
 
     [HttpGet("google-response")]
     public async Task<IActionResult> GoogleResponse()
     {
+        Console.WriteLine("Google response");
         var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
         if (!result.Succeeded)
@@ -54,52 +61,79 @@ public class AccountController : ControllerBase
         var sessionToken = response.ApiKey;
 
         // Set cookies
-        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, new CookieOptions { });
-        HttpContext.Response.Cookies.Append("Username", response.Username, new CookieOptions { });
-        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, new CookieOptions { });
+        var secureCookieOptions = new CookieOptions { Secure = true, SameSite = SameSiteMode.None };
+
+        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, secureCookieOptions);
+        HttpContext.Response.Cookies.Append("Username", response.Username, secureCookieOptions);
+        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, secureCookieOptions);
 
         // Return JSON response with session token
-        return Redirect("http://localhost:3000");
+        return Redirect("https://www.floom.ai/");
     }
 
-    [HttpGet("github-login")]
-    public IActionResult GitHubLogin()
+    [HttpPost("github-login")]
+    public async Task<IActionResult> GitHubLogin([FromBody] GitHubAuthRequest request)
     {
-        var properties = new AuthenticationProperties { RedirectUri = "/v1/account/github-response" };
-        return Challenge(properties, "GitHub");
+        var clientId = Environment.GetEnvironmentVariable("FLOOM_GITHUB_CLIENT_ID");
+        var clientSecret = Environment.GetEnvironmentVariable("FLOOM_GITHUB_CLIENT_SECRET");
+
+        using (var httpClient = new HttpClient())
+        {
+            var tokenResponse = await httpClient.PostAsync("https://github.com/login/oauth/access_token", new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("client_id", clientId),
+                new KeyValuePair<string, string>("client_secret", clientSecret),
+                new KeyValuePair<string, string>("code", request.Code)
+            }));
+
+            var tokenResponseBody = await tokenResponse.Content.ReadAsStringAsync();
+
+            tokenResponse.EnsureSuccessStatusCode();
+            var queryParams = System.Web.HttpUtility.ParseQueryString(tokenResponseBody);
+            var accessToken = queryParams["access_token"];
+
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("floom.ai");
+
+            var userResponse = await httpClient.GetAsync("https://api.github.com/user");
+
+            var userResponseBody = await userResponse.Content.ReadAsStringAsync();
+
+
+            userResponse.EnsureSuccessStatusCode();
+            var user = JObject.Parse(userResponseBody);
+
+            var emailResponse = await httpClient.GetAsync("https://api.github.com/user/emails");
+
+            var emailResponseBody = await emailResponse.Content.ReadAsStringAsync();
+
+            emailResponse.EnsureSuccessStatusCode();
+            var emails = JArray.Parse(emailResponseBody);
+
+            // Process user and email data as needed
+            // Save to your database and generate session token or JWT
+            var response = await _service.RegisterOrLoginUserAsync("github", emails.First().ToString());
+
+            Console.WriteLine($"Email response body: {emails.First().ToString()}");
+
+            var sessionToken = response.ApiKey;
+
+            return Ok(new { sessionToken });
+        }
     }
-
-    [HttpGet("github-response")]
-    public async Task<IActionResult> GitHubResponse()
-    {
-        var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-        if (!result.Succeeded)
-            return BadRequest("GitHub authentication failed");
-
-        var emailClaim = result.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-        if (string.IsNullOrEmpty(emailClaim))
-            return BadRequest("No email claim found");
-
-        var response = await _service.RegisterOrLoginUserAsync("github", emailClaim);
-
-        // Set cookies without HttpOnly flag so they can be accessed by JavaScript
-        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, new CookieOptions { Secure = true });
-        HttpContext.Response.Cookies.Append("Username", response.Username, new CookieOptions { Secure = true });
-        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, new CookieOptions { Secure = true });
-
-        return Redirect("http://localhost:3000");
-    }
-
 
     [HttpGet("logout")]
-    [Authorize]
+    [ApiKeyAuthorization]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        HttpContext.Response.Cookies.Delete("SessionToken");
-        HttpContext.Response.Cookies.Delete("Username");
-        HttpContext.Response.Cookies.Delete("Nickname");
+        var apiKey = HttpContextHelper.GetApiKeyFromHttpContext();
+        Console.WriteLine($"Logging out user with API key: {apiKey}");
+        await _service.LogoutUserByApiKeyAsync(apiKey);
         return Ok("Logged out");
     }
+}
+
+public class GitHubAuthRequest
+{
+    public string Code { get; set; }
 }
