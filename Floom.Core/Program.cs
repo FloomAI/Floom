@@ -94,20 +94,7 @@ builder.Services.AddAuthentication(options =>
     {
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     }}
-)
-.AddGoogle(options =>
-{
-    var googleClientId = Environment.GetEnvironmentVariable("FLOOM_GOOGLE_CLIENT_ID") ?? "";
-    var googleClientSecret = Environment.GetEnvironmentVariable("FLOOM_GOOGLE_CLIENT_SECRET") ?? "";
-    options.ClientId = googleClientId;
-    options.ClientSecret = googleClientSecret;
-    options.CallbackPath = new PathString("/v1/account/google-response");
-    options.Events.OnRedirectToAuthorizationEndpoint = context =>
-    {
-        context.Response.Redirect(context.RedirectUri.Replace("http://", "https://"));
-        return Task.CompletedTask;
-    };
-});
+);
 
 builder.Services.AddAuthorization();
 

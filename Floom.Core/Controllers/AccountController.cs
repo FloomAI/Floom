@@ -30,45 +30,54 @@ public class AccountController : ControllerBase
     }
 
 
-    [HttpGet("google-login")]
-    public IActionResult Login()
+    [HttpPost("google-login")]
+    public async Task<IActionResult> GoogleCallback([FromBody] GoogleAuthRequest request)
     {
-        Console.WriteLine("Google login");
-        var properties = new AuthenticationProperties 
-        { 
-            RedirectUri = "https://api.floom.ai/v1/account/google-response" 
-        };
-        return Challenge(properties, GoogleDefaults.AuthenticationScheme);
-    }
+        var clientId = Environment.GetEnvironmentVariable("FLOOM_GOOGLE_CLIENT_ID");
+        var clientSecret = Environment.GetEnvironmentVariable("FLOOM_GOOGLE_CLIENT_SECRET");
 
-    [HttpGet("google-response")]
-    public async Task<IActionResult> GoogleResponse()
-    {
-        Console.WriteLine("Google response");
-        var result = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        using (var httpClient = new HttpClient())
+        {
+            Console.WriteLine("Starting token request to Google.");
+            var tokenResponse = await httpClient.PostAsync("https://oauth2.googleapis.com/token", new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("client_id", clientId),
+                new KeyValuePair<string, string>("client_secret", clientSecret),
+                new KeyValuePair<string, string>("code", request.Code),
+                new KeyValuePair<string, string>("redirect_uri", "https://www.floom.ai"), // Your redirect URI
+                new KeyValuePair<string, string>("grant_type", "authorization_code")
+            }));
 
-        if (!result.Succeeded)
-            return BadRequest("Google authentication failed");
+            var tokenResponseBody = await tokenResponse.Content.ReadAsStringAsync();
+            Console.WriteLine("Token response received: " + tokenResponseBody);
+            tokenResponse.EnsureSuccessStatusCode();
 
-        var emailClaim = result.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-        
-        if (string.IsNullOrEmpty(emailClaim))
-            return BadRequest("No email claim found");
+            var tokenData = JObject.Parse(tokenResponseBody);
+            var accessToken = tokenData["access_token"].ToString();
+            Console.WriteLine("Access token: " + accessToken);
 
-        var response = await _service.RegisterOrLoginUserAsync("google", emailClaim);
+            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("floom.ai");
 
-        // Generate a session token (for simplicity, using a GUID here)
-        var sessionToken = response.ApiKey;
+            Console.WriteLine("Starting user info request to Google.");
+            var userResponse = await httpClient.GetAsync("https://www.googleapis.com/oauth2/v2/userinfo");
+            var userResponseBody = await userResponse.Content.ReadAsStringAsync();
+            Console.WriteLine("User info response received: " + userResponseBody);
 
-        // Set cookies
-        var secureCookieOptions = new CookieOptions { Secure = true, SameSite = SameSiteMode.None };
+            userResponse.EnsureSuccessStatusCode();
+            var user = JObject.Parse(userResponseBody);
 
-        HttpContext.Response.Cookies.Append("SessionToken", response.ApiKey, secureCookieOptions);
-        HttpContext.Response.Cookies.Append("Username", response.Username, secureCookieOptions);
-        HttpContext.Response.Cookies.Append("Nickname", response.Nickname, secureCookieOptions);
+            var email = user["email"].ToString();
+            Console.WriteLine("User email: " + email);
 
-        // Return JSON response with session token
-        return Redirect("https://www.floom.ai/");
+            var response = await _service.RegisterOrLoginUserAsync("google", email);
+
+            var sessionToken = response.ApiKey;
+            Console.WriteLine("Session token: " + sessionToken);
+
+            return Ok(new { sessionToken });
+        }
+
     }
 
     [HttpPost("github-login")]
@@ -83,7 +92,8 @@ public class AccountController : ControllerBase
             {
                 new KeyValuePair<string, string>("client_id", clientId),
                 new KeyValuePair<string, string>("client_secret", clientSecret),
-                new KeyValuePair<string, string>("code", request.Code)
+                new KeyValuePair<string, string>("code", request.Code),
+                new KeyValuePair<string, string>("state", request.State)
             }));
 
             var tokenResponseBody = await tokenResponse.Content.ReadAsStringAsync();
@@ -98,7 +108,6 @@ public class AccountController : ControllerBase
             var userResponse = await httpClient.GetAsync("https://api.github.com/user");
 
             var userResponseBody = await userResponse.Content.ReadAsStringAsync();
-
 
             userResponse.EnsureSuccessStatusCode();
             var user = JObject.Parse(userResponseBody);
@@ -136,4 +145,11 @@ public class AccountController : ControllerBase
 public class GitHubAuthRequest
 {
     public string Code { get; set; }
+    public string State { get; set; }
+}
+
+public class GoogleAuthRequest
+{
+    public string Code { get; set; }
+    public string State { get; set; }
 }
