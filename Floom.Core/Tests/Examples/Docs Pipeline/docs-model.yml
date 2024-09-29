@@ -3,4 +3,4 @@ kind: Model
 id: docs-model
 vendor: OpenAI
 model: gpt-3.5-turbo
-apiKey: REMOVED
+apiKey: TEST

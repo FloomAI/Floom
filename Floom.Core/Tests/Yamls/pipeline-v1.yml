@@ -6,7 +6,7 @@ pipeline:
   model:
     - package: floom/model/connector/openai
       model: gpt-3.5-turbo
-      api-key: REMOVED=
+      api-key: TEST
 
   prompt:
     template:

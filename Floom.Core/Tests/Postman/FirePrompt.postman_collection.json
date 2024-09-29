@@ -32,7 +32,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "schema: v1\r\nkind: Model\r\nid: docs-model\r\nvendor: OpenAI\r\nmodel: text-davinci-003\r\napiKey: REMOVED",
+							"raw": "schema: v1\r\nkind: Model\r\nid: docs-model\r\nvendor: OpenAI\r\nmodel: text-davinci-003\r\napiKey: TEST",
 							"options": {
 								"raw": {
 									"language": "text"
@@ -76,7 +76,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "schema: v1\r\nkind: Model\r\nid: create-image-model\r\nvendor: OpenAI\r\nmodel: dall-e\r\napiKey: REMOVED",
+							"raw": "schema: v1\r\nkind: Model\r\nid: create-image-model\r\nvendor: OpenAI\r\nmodel: dall-e\r\napiKey: TEST",
 							"options": {
 								"raw": {
 									"language": "text"
@@ -581,7 +581,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "schema: v1\r\nkind: Embeddings\r\nid: docs-embeddings\r\ntype: text  \r\nvendor: OpenAI\r\nmodel: text-embedding-ada-002\r\napiKey: REMOVED",
+							"raw": "schema: v1\r\nkind: Embeddings\r\nid: docs-embeddings\r\ntype: text  \r\nvendor: OpenAI\r\nmodel: text-embedding-ada-002\r\napiKey: TEST-",
 							"options": {
 								"raw": {
 									"language": "text"

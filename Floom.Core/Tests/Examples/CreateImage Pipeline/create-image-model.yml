@@ -3,4 +3,4 @@ kind: Model
 id: create-image-model
 vendor: OpenAI
 model: dall-e
-apiKey: REMOVED
+apiKey: TEST
