@@ -49,7 +49,25 @@ jobs:
               echo "Error: The zip file is empty or not created."
               exit 1
           fi
-          echo "Zip file created successfully and contains data."
+
+          # Check the size of the zip file (should be around 50MB)
+          echo "Checking if the zip file size is close to 50MB..."
+          ZIP_FILE_SIZE=$(du -m floom_core_build.zip | cut -f1)  # File size in MB
+          echo "Zip file size: ${ZIP_FILE_SIZE} MB"
+          if [ "$ZIP_FILE_SIZE" -lt 45 ] || [ "$ZIP_FILE_SIZE" -gt 55 ]; then
+              echo "Error: Zip file size is not within the expected range (45MB - 55MB)."
+              exit 1
+          fi
+
+          # Check the contents of the zip file to ensure it has the Floom.Core directory
+          echo "Checking contents of the zip file..."
+          unzip -l floom_core_build.zip | grep "Floom.Core/" > /dev/null
+          if [ $? -ne 0 ]; then
+              echo "Error: Floom.Core directory not found in the zip file."
+              exit 1
+          fi
+
+          echo "Zip file created successfully and contains Floom.Core directory with the correct size."
 
       # Upload the build artifact to the remote server
       - name: Upload build artifact to EC2
