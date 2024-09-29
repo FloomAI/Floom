@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Build and Deploy to EC2
 
 on:
   push:
@@ -14,80 +14,73 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Set up .NET environment
+      # Set up .NET Core environment
       - name: Setup .NET Core
-        uses: actions/setup-dotnet@v2
+        uses: actions/setup-dotnet@v1
         with:
           dotnet-version: '7.0.309'
 
-      # Create PEM file from secret
-      - name: Create PEM file
-        run: |
-          echo "Creating PEM file from secret..."
-          mkdir -p Certificates
-          echo "${{ secrets.PEM_FILE_CONTENT }}" > Certificates/floom-gateway-pair.pem
-          chmod 600 Certificates/floom-gateway-pair.pem
-          echo "PEM file created."
-
-      # Restore .NET dependencies and build the project
-      - name: Restore and Build
+      # Restore and Build the project
+      - name: Restore and Build Project
         run: |
           CORE_OUTPUT_DIR="./build/Floom.Core"
-          BUILD_ARCHIVE="floom_core_build.zip"
-          PEM_FILE="Certificates/floom-gateway-pair.pem"
-
-          echo "Cleaning up previous build..."
+          
+          # Clean up previous build
           rm -rf "./build"
           mkdir -p "$CORE_OUTPUT_DIR/"
 
+          # Restore dependencies
           echo "Restoring dependencies for Floom.Core..."
           dotnet restore "Floom.Core/Floom.Core.csproj"
 
-          echo "Building and publishing Floom.Core project..."
+          # Build and publish Floom.Core project
+          echo "Building and publishing the project..."
           dotnet publish "Floom.Core/Floom.Core.csproj" -c Release -o "$CORE_OUTPUT_DIR"
 
+          # Zip the build artifacts
           echo "Zipping the build artifacts..."
           cd "./build"
-          zip -r "../$BUILD_ARCHIVE" "Floom.Core" > /dev/null 2>&1
+          zip -r "../floom_core_build.zip" "Floom.Core"
           cd ..
-          echo "Build artifacts zipped into $BUILD_ARCHIVE."
 
-      # Upload the build artifact to the remote server and deploy
-      - name: Deploy to Remote Server
+      # Upload the build artifact to the remote server
+      - name: Upload build artifact to EC2
         run: |
           REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
-          REMOTE_DIR="${{ secrets.REMOTE_DIR }}"
-          SERVICE_NAME="${{ secrets.SERVICE_NAME }}"
-          PEM_FILE="Certificates/floom-gateway-pair.pem"
-          BUILD_ARCHIVE="floom_core_build.zip"
+          PEM_FILE="floom-gateway-pair.pem"
 
+          # Create PEM file from secret
+          mkdir -p Certificates
+          echo "${{ secrets.PEM_FILE_CONTENT }}" > Certificates/$PEM_FILE
+          chmod 600 Certificates/$PEM_FILE
+
+          # Copy the zip file to the remote EC2 server
           echo "Copying the build archive to the remote server ($REMOTE_HOST)..."
-          scp -o StrictHostKeyChecking=no -i "$PEM_FILE" "$BUILD_ARCHIVE" "$REMOTE_HOST:~/"
-          echo "Build archive copied to $REMOTE_HOST."
+          scp -i "Certificates/$PEM_FILE" floom_core_build.zip "$REMOTE_HOST:~/"
 
-          echo "Connecting to the remote server and starting the deployment process..."
-          ssh -o StrictHostKeyChecking=no -i "$PEM_FILE" "$REMOTE_HOST" bash -c "
+      # Deploy on the remote server (SSH)
+      - name: Deploy on EC2 Server
+        run: |
+          REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
+          REMOTE_DIR="/var/floom"
+          SERVICE_NAME="floom.service"
+          BUILD_ARCHIVE="floom_core_build.zip"
+          PEM_FILE="floom-gateway-pair.pem"
+
+          echo "Connecting to the remote server and deploying..."
+          ssh -o StrictHostKeyChecking=no -i "Certificates/$PEM_FILE" "$REMOTE_HOST" bash -c "
             set -e
-            echo 'Stopping the service: $SERVICE_NAME...'
+            echo 'Stopping the service...'
             sudo systemctl stop $SERVICE_NAME
 
-            echo 'Cleaning up old files in $REMOTE_DIR...'
+            echo 'Cleaning up old files...'
             sudo rm -rf $REMOTE_DIR/*
 
-            echo 'Creating necessary directories in $REMOTE_DIR...'
+            echo 'Creating necessary directories...'
             sudo mkdir -p $REMOTE_DIR
 
-            echo 'Unzipping the new build quietly...'
-            sudo unzip -q -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
-
-            echo 'Listing contents in $REMOTE_DIR after unzip...'
-            ls -l $REMOTE_DIR
-
-            echo 'Checking if Floom.Core directory exists and is not empty after unzipping...'
-            if [ ! -d $REMOTE_DIR/Floom.Core ] || [ ! \"\$(ls -A $REMOTE_DIR/Floom.Core)\" ]; then
-              echo 'Error: Floom.Core directory is missing or empty after unzipping.'
-              exit 1
-            fi
+            echo 'Unzipping the new build...'
+            sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
             echo 'Moving files from Floom.Core to the target directory...'
             sudo mv $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
@@ -98,17 +91,15 @@ jobs:
             echo 'Removing the zip file...'
             rm ~/$BUILD_ARCHIVE
 
-            echo 'Starting the service: $SERVICE_NAME...'
+            echo 'Starting the service...'
             sudo systemctl start $SERVICE_NAME
 
             echo 'Deployment completed successfully.'
           "
 
+      # Clean up local zip file
+      - name: Clean up local zip file
+        run: |
           echo "Cleaning up local zip file..."
-          rm "$BUILD_ARCHIVE"
-          echo "Local zip file removed."
+          rm floom_core_build.zip
 
-        env:
-          REMOTE_HOST: "${{ secrets.REMOTE_HOST }}"
-          REMOTE_DIR: "${{ secrets.REMOTE_DIR }}"
-          SERVICE_NAME: "${{ secrets.SERVICE_NAME }}"
