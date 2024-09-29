@@ -168,7 +168,7 @@ public class FunctionsService : IFunctionsService
                 input = userPrompt,
                 variables = new { language = "hebrew" },
                 config = new { },
-                env = new { OPENAI_API_KEY = "REMOVED-1kYJtfEErUPPgpo11MdfT3BlbkFJ5x8f10AGqx7MpZda0ezP" }
+                env = new { OPENAI_API_KEY = Environment.GetEnvironmentVariable("OPENAI_API_KEY") }
             };
             var configJson = JsonConvert.SerializeObject(config);
             form.Add(new StringContent(configJson, Encoding.UTF8, "application/json"), "config");
