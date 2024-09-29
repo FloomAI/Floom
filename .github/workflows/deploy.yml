@@ -60,34 +60,34 @@ jobs:
 
           # SSH into the remote server to deploy
           echo "Deploying the build on the remote server..."
-          ssh -i "$PEM_FILE" "$REMOTE_HOST" bash -s <<'EOF'
+          ssh -i "$PEM_FILE" "$REMOTE_HOST" bash -c "
             set -e
-            # Stop the service
+            echo 'Stopping the service...'
             sudo systemctl stop $SERVICE_NAME
 
-            # Remove old files
+            echo 'Cleaning up old files...'
             sudo rm -rf $REMOTE_DIR/*
 
-            # Create necessary directories
+            echo 'Creating necessary directories...'
             sudo mkdir -p $REMOTE_DIR
 
-            # Unzip the new build
+            echo 'Unzipping the new build...'
             sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
-            # Move the contents of Floom.Core to the root of the target directory
+            echo 'Moving files...'
             sudo mv $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
 
-            # Remove the now empty Floom.Core directory
+            echo 'Removing the now empty Floom.Core directory...'
             sudo rm -rf $REMOTE_DIR/Floom.Core
 
-            # Remove the zip file
+            echo 'Removing the zip file...'
             rm ~/$BUILD_ARCHIVE
 
-            # Start the service
+            echo 'Starting the service...'
             sudo systemctl start $SERVICE_NAME
 
-            echo "Deployment completed."
-EOF
+            echo 'Deployment completed.'
+          "
 
           # Clean up local zip file
           rm "$BUILD_ARCHIVE"
