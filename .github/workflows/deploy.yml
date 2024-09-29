@@ -66,7 +66,6 @@ jobs:
           echo "Copying the build archive to the remote server ($REMOTE_HOST)..."
           scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "Certificates/$PEM_FILE" floom_core_build.zip "$REMOTE_HOST:~/"
 
-      # Deploy on the remote server (SSH)
       - name: Deploy on EC2 Server
         run: |
           REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
@@ -90,14 +89,13 @@ jobs:
             echo 'Unzipping the new build...'
             sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
-            echo 'Ensuring Floom.Core exists and cleaning up any conflicts...'
-            if [ -f $REMOTE_DIR/Floom.Core ]; then
-              echo 'A file named Floom.Core exists, removing it...'
-              sudo rm -f $REMOTE_DIR/Floom.Core
-            fi
-            if [ -d $REMOTE_DIR/Floom.Core ]; then
-              echo 'A directory named Floom.Core exists, removing it...'
-              sudo rm -rf $REMOTE_DIR/Floom.Core
+            echo 'Listing the contents of $REMOTE_DIR after unzipping:'
+            ls -l $REMOTE_DIR
+
+            # Check if Floom.Core exists
+            if [ ! -d $REMOTE_DIR/Floom.Core ]; then
+              echo 'Error: Floom.Core directory does not exist after unzipping.'
+              exit 1
             fi
 
             echo 'Moving files from Floom.Core to the target directory...'
@@ -114,6 +112,7 @@ jobs:
 
             echo 'Deployment completed successfully.'
           "
+
 
       # Clean up local zip file
       - name: Clean up local zip file
