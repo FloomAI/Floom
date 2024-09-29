@@ -43,7 +43,7 @@ jobs:
           zip -r "../floom_core_build.zip" "Floom.Core"
           cd ..
 
-      # Upload the build artifact to the remote server
+     # Upload the build artifact to the remote server
       - name: Upload build artifact to EC2
         run: |
           REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
@@ -54,9 +54,9 @@ jobs:
           echo "${{ secrets.PEM_FILE_CONTENT }}" > Certificates/$PEM_FILE
           chmod 600 Certificates/$PEM_FILE
 
-          # Copy the zip file to the remote EC2 server
+          # Disable host key checking and copy the zip file to the remote EC2 server
           echo "Copying the build archive to the remote server ($REMOTE_HOST)..."
-          scp -i "Certificates/$PEM_FILE" floom_core_build.zip "$REMOTE_HOST:~/"
+          scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "Certificates/$PEM_FILE" floom_core_build.zip "$REMOTE_HOST:~/"
 
       # Deploy on the remote server (SSH)
       - name: Deploy on EC2 Server
@@ -68,7 +68,7 @@ jobs:
           PEM_FILE="floom-gateway-pair.pem"
 
           echo "Connecting to the remote server and deploying..."
-          ssh -o StrictHostKeyChecking=no -i "Certificates/$PEM_FILE" "$REMOTE_HOST" bash -c "
+          ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i "Certificates/$PEM_FILE" "$REMOTE_HOST" bash -c "
             set -e
             echo 'Stopping the service...'
             sudo systemctl stop $SERVICE_NAME
@@ -97,9 +97,9 @@ jobs:
             echo 'Deployment completed successfully.'
           "
 
+
       # Clean up local zip file
       - name: Clean up local zip file
         run: |
           echo "Cleaning up local zip file..."
           rm floom_core_build.zip
-
