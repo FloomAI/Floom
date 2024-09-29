@@ -13,7 +13,7 @@ public class RegisterUserResponse
 public interface IUsersService
 {
     Task<RegisterUserResponse> RegisterGuestUserAsync();
-    Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email);
+    Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email, string? firstName = null, string? lastName = null);
 
     Task<Boolean> LogoutUserByApiKeyAsync(string apiKey);
 }
@@ -41,7 +41,7 @@ public class UsersService : IUsersService
         return await RegisterUserAsync(user);
     }
 
-    public async Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email)
+    public async Task<RegisterUserResponse> RegisterOrLoginUserAsync(string provider, string email, string? firstName = null, string? lastName = null)
     {
         var existingUser = await _userRepository.Get(email, "emailAddress");
 
@@ -57,7 +57,9 @@ public class UsersService : IUsersService
             type = "user",
             emailAddress = email,
             username = FloomUsernameGenerator.GenerateTemporaryUsername(),
-            nickname = FloomUsernameGenerator.GenerateTemporaryNickname()
+            nickname = FloomUsernameGenerator.GenerateTemporaryNickname(),
+            firstName = firstName,
+            lastName = lastName
         };
         return await RegisterUserAsync(user);
     }

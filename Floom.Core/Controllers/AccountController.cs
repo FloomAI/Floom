@@ -44,7 +44,7 @@ public class AccountController : ControllerBase
                 new KeyValuePair<string, string>("client_id", clientId),
                 new KeyValuePair<string, string>("client_secret", clientSecret),
                 new KeyValuePair<string, string>("code", request.Code),
-                new KeyValuePair<string, string>("redirect_uri", "https://www.floom.ai"), // Your redirect URI
+                new KeyValuePair<string, string>("redirect_uri", "https://console.floom.ai"), // Your redirect URI
                 new KeyValuePair<string, string>("grant_type", "authorization_code")
             }));
 
@@ -66,11 +66,11 @@ public class AccountController : ControllerBase
 
             userResponse.EnsureSuccessStatusCode();
             var user = JObject.Parse(userResponseBody);
-
             var email = user["email"].ToString();
-            Console.WriteLine("User email: " + email);
-
-            var response = await _service.RegisterOrLoginUserAsync("google", email);
+            var firstName = user["given_name"]?.ToString();
+            var lastName = user["family_name"]?.ToString();
+            Console.WriteLine($"User email: {email}, First Name: {firstName}, Last Name: {lastName}");
+            var response = await _service.RegisterOrLoginUserAsync("google", email, firstName, lastName);
 
             var sessionToken = response.ApiKey;
             Console.WriteLine("Session token: " + sessionToken);
@@ -112,6 +112,11 @@ public class AccountController : ControllerBase
             userResponse.EnsureSuccessStatusCode();
             var user = JObject.Parse(userResponseBody);
 
+            var fullName = user["name"]?.ToString(); // GitHub's "name" field
+            var names = fullName?.Split(' ', 2); // Attempt to split into first and last names
+            var firstName = names?.Length > 0 ? names[0] : null;
+            var lastName = names?.Length > 1 ? names[1] : null;
+
             var emailResponse = await httpClient.GetAsync("https://api.github.com/user/emails");
 
             var emailResponseBody = await emailResponse.Content.ReadAsStringAsync();
@@ -121,7 +126,7 @@ public class AccountController : ControllerBase
 
             // Process user and email data as needed
             // Save to your database and generate session token or JWT
-            var response = await _service.RegisterOrLoginUserAsync("github", emails.First().ToString());
+            var response = await _service.RegisterOrLoginUserAsync("github", emails.First().ToString(), firstName, lastName);
 
             Console.WriteLine($"Email response body: {emails.First().ToString()}");
 

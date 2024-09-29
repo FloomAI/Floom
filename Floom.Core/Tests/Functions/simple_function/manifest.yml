@@ -1,0 +1,14 @@
+manifest:
+    name: simple-translation-openai-prompt
+    description: A simple OpenAI translation function 
+    runtime: 
+        language: python
+        framework: langchain/2.1
+
+    parameters:
+        - name: language
+          description: The language to translate to
+          required: true
+     
+    entrypoint:
+        prompt: prompt.py

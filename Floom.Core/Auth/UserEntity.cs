@@ -12,4 +12,6 @@ public class UserEntity : DatabaseEntity
     public string emailAddress { get; set; } = string.Empty;
     public string username { get; set; } = string.Empty;
     public string nickname { get; set; } = string.Empty;
+    public string? firstName { get; set; }
+    public string? lastName { get; set; }
 }

@@ -12,7 +12,7 @@ public interface IFunctionsService
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
 
-    Task<List<FunctionEntity>> ListFunctionsAsync(string userId);
+    Task<List<dynamic>> ListFunctionsAsync(string userId);
 }
 
 public class FunctionsService : IFunctionsService
@@ -89,6 +89,7 @@ public class FunctionsService : IFunctionsService
                 existingFunction.runtimeFramework = manifest.runtime.framework;
                 existingFunction.promptUrl = promptFileUrl;
                 existingFunction.dataUrl = dataFileUrl;
+                existingFunction.description = manifest.description;
                 //await _repository.Update(existingFunction);
                 await _repository.UpsertEntity(existingFunction, existingFunction.Id, "Id");
                 return existingFunction.Id;
@@ -99,6 +100,7 @@ public class FunctionsService : IFunctionsService
                 var functionEntity = new FunctionEntity
                 {
                     name = normalizedFunctionName,
+                    description = manifest.description,
                     runtimeLanguage = manifest.runtime.language,
                     runtimeFramework = manifest.runtime.framework,
                     promptUrl = promptFileUrl,
@@ -188,10 +190,11 @@ public class FunctionsService : IFunctionsService
         }
     }
 
-    public async Task<List<FunctionEntity>> ListFunctionsAsync(string userId)
+    public async Task<List<dynamic>> ListFunctionsAsync(string userId)
     {
         var functions = await _repository.ListByConditionAsync(f => f.userId == userId);
-        return functions.ToList();
+        var result = functions.Select(f => new { f.name, f.description, f.runtimeLanguage, f.runtimeFramework }).ToList<dynamic>();
+        return result;
     }
 }
 
@@ -213,6 +216,7 @@ partial class ManifestDto
 public class Manifest
 {
     public string name { get; set; }
+    public string? description { get; set; }
     public Runtime runtime { get; set; }
     public Entrypoint entrypoint { get; set; }
 }

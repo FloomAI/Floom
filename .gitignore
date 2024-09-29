@@ -72,3 +72,6 @@ bld/
 Floom.Core/appsettings.json
 Floom.Core/appsettings.json
 build.sh
+Floom.Core/appsettings.json
+build.sh
+Floom.Core/Properties/launchSettings.json

@@ -69,7 +69,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("https://www.floom.ai")
+        builder.WithOrigins("https://console.floom.ai")
                .AllowAnyHeader()
                .AllowAnyMethod()
                .AllowCredentials();
@@ -110,7 +110,7 @@ Console.WriteLine("Handling request: " + context.Request.Method + " " + context.
     if (context.Request.Method == "OPTIONS")
     {
         Console.WriteLine("Handling preflight request (OPTIONS)");
-        context.Response.Headers["Access-Control-Allow-Origin"] = "https://www.floom.ai";
+        context.Response.Headers["Access-Control-Allow-Origin"] = "https://console.floom.ai";
         context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
         context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
         context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Api-Key";
@@ -125,7 +125,7 @@ Console.WriteLine("Handling request: " + context.Request.Method + " " + context.
             Console.WriteLine("Adding CORS headers to response");
             if (!context.Response.Headers.ContainsKey("Access-Control-Allow-Origin"))
             {
-                context.Response.Headers["Access-Control-Allow-Origin"] = "https://www.floom.ai";
+                context.Response.Headers["Access-Control-Allow-Origin"] = "https://console.floom.ai";
             }
             if (!context.Response.Headers.ContainsKey("Access-Control-Allow-Credentials"))
             {

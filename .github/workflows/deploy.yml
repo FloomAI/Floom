@@ -1,0 +1,106 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Set up .NET environment
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: '7.0.309'
+
+      # Restore .NET dependencies and build the project
+      - name: Restore and Build
+        run: |
+          CORE_OUTPUT_DIR="./build/Floom.Core"
+          BUILD_ARCHIVE="floom_core_build.zip"
+          PEM_FILE="Certificates/floom-gateway-pair.pem"
+
+          # Clean up previous build
+          rm -rf "./build"
+          mkdir -p "$CORE_OUTPUT_DIR/"
+
+          # Restore dependencies
+          echo "Restoring dependencies for Floom.Core..."
+          dotnet restore "Floom.Core/Floom.Core.csproj"
+
+          # Build and publish Floom.Core project
+          echo "Publishing Floom.Core project..."
+          dotnet publish "Floom.Core/Floom.Core.csproj" -c Release -o "$CORE_OUTPUT_DIR"
+
+          # Zip the build folder
+          echo "Zipping the build artifacts..."
+          cd "./build"
+          zip -r "../$BUILD_ARCHIVE" "Floom.Core"
+          cd ..
+          
+      # Upload the build artifact to the remote server
+      - name: Deploy to Remote Server
+        run: |
+          REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
+          REMOTE_DIR="${{ secrets.REMOTE_DIR }}"
+          SERVICE_NAME="${{ secrets.SERVICE_NAME }}"
+          PEM_FILE="Certificates/floom-gateway-pair.pem"
+          BUILD_ARCHIVE="floom_core_build.zip"
+
+          # Copy the zip file to the remote server
+          echo "Copying the build archive to the remote server..."
+          scp -i "$PEM_FILE" "$BUILD_ARCHIVE" "$REMOTE_HOST:~/"
+
+          # SSH into the remote server to deploy
+          echo "Deploying the build on the remote server..."
+          ssh -i "$PEM_FILE" "$REMOTE_HOST" << EOF
+            set -e
+            # Stop the service
+            echo "Stopping the service..."
+            sudo systemctl stop $SERVICE_NAME
+
+            # Remove old files
+            echo "Cleaning up old files..."
+            sudo rm -rf $REMOTE_DIR/*
+
+            # Create necessary directories
+            echo "Creating necessary directories..."
+            sudo mkdir -p $REMOTE_DIR
+
+            # Unzip the new build
+            echo "Unzipping the new build..."
+            sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
+
+            # Move the contents of Floom.Core to the root of the target directory
+            echo "Moving files..."
+            sudo mv $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
+
+            # Remove the now empty Floom.Core directory
+            sudo rm -rf $REMOTE_DIR/Floom.Core
+
+            # Remove the zip file
+            echo "Removing the zip file..."
+            rm ~/$BUILD_ARCHIVE
+
+            # Start the service
+            echo "Starting the service..."
+            sudo systemctl start $SERVICE_NAME
+
+            echo "Deployment completed."
+EOF
+
+          # Clean up local zip file
+          rm "$BUILD_ARCHIVE"
+
+        env:
+          REMOTE_HOST: "${{ secrets.REMOTE_HOST }}"
+          REMOTE_DIR: "${{ secrets.REMOTE_DIR }}"
+          SERVICE_NAME: "${{ secrets.SERVICE_NAME }}"
+          PEM_FILE: "Certificates/floom-gateway-pair.pem"
