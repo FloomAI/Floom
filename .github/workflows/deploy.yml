@@ -80,6 +80,14 @@ jobs:
             echo 'Unzipping the new build...'
             sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
+            echo 'Removing any conflicting Floom.Core directory...'
+            if [ -f $REMOTE_DIR/Floom.Core ]; then
+              sudo rm -f $REMOTE_DIR/Floom.Core
+            fi
+            if [ -d $REMOTE_DIR/Floom.Core ]; then
+              sudo rm -rf $REMOTE_DIR/Floom.Core
+            fi
+
             echo 'Moving files...'
             sudo mv -f $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
 
