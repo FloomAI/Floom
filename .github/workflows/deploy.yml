@@ -77,18 +77,13 @@ jobs:
             echo 'Creating necessary directories...'
             sudo mkdir -p $REMOTE_DIR
 
-            echo 'Unzipping the new build...'
-            sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
+            echo 'Unzipping the new build quietly...'
+            sudo unzip -q -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
-            echo 'Checking if Floom.Core is a file or directory...'
-            if [ -f $REMOTE_DIR/Floom.Core ]; then
-              echo 'A file named Floom.Core exists, removing it...'
-              sudo rm -f $REMOTE_DIR/Floom.Core
-            fi
-
-            if [ -d $REMOTE_DIR/Floom.Core ]; then
-              echo 'A directory named Floom.Core exists, removing it...'
-              sudo rm -rf $REMOTE_DIR/Floom.Core
+            echo 'Checking if Floom.Core directory exists after unzipping...'
+            if [ ! -d $REMOTE_DIR/Floom.Core ] || [ ! "$(ls -A $REMOTE_DIR/Floom.Core)" ]; then
+              echo 'Error: Floom.Core directory is missing or empty after unzipping.'
+              exit 1
             fi
 
             echo 'Moving files from Floom.Core to the target directory...'
