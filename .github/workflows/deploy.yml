@@ -81,7 +81,7 @@ jobs:
             sudo unzip -o ~/$BUILD_ARCHIVE -d $REMOTE_DIR
 
             echo 'Moving files...'
-            sudo mv $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
+            sudo mv -f $REMOTE_DIR/Floom.Core/* $REMOTE_DIR
 
             echo 'Removing the now empty Floom.Core directory...'
             sudo rm -rf $REMOTE_DIR/Floom.Core
