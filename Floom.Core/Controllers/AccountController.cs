@@ -29,6 +29,13 @@ public class AccountController : ControllerBase
         return Ok(apiKey);
     }
 
+    // create /test get request to test if the api is working
+    [HttpGet("test")]
+    public IActionResult Test()
+    {
+        return Ok("API is working");
+    }
+
 
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleCallback([FromBody] GoogleAuthRequest request)
