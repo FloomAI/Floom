@@ -20,6 +20,13 @@ jobs:
         with:
           dotnet-version: '7.0.309'
 
+      # Create PEM file from secret
+      - name: Create PEM file
+        run: |
+          mkdir -p Certificates
+          echo "${{ secrets.PEM_FILE_CONTENT }}" > Certificates/floom-gateway-pair.pem
+          chmod 600 Certificates/floom-gateway-pair.pem
+
       # Restore .NET dependencies and build the project
       - name: Restore and Build
         run: |
@@ -45,7 +52,7 @@ jobs:
           zip -r "../$BUILD_ARCHIVE" "Floom.Core"
           cd ..
 
-      # Upload the build artifact to the remote server
+      # Upload the build artifact to the remote server and deploy
       - name: Deploy to Remote Server
         run: |
           REMOTE_HOST="${{ secrets.REMOTE_HOST }}"
@@ -56,11 +63,10 @@ jobs:
 
           # Copy the zip file to the remote server
           echo "Copying the build archive to the remote server..."
-          scp -i "$PEM_FILE" "$BUILD_ARCHIVE" "$REMOTE_HOST:~/"
+          scp -o StrictHostKeyChecking=no -i "$PEM_FILE" "$BUILD_ARCHIVE" "$REMOTE_HOST:~/"
 
           # SSH into the remote server to deploy
-          echo "Deploying the build on the remote server..."
-          ssh -i "$PEM_FILE" "$REMOTE_HOST" bash -c "
+          ssh -o StrictHostKeyChecking=no -i "$PEM_FILE" "$REMOTE_HOST" bash -c "
             set -e
             echo 'Stopping the service...'
             sudo systemctl stop $SERVICE_NAME
@@ -96,4 +102,3 @@ jobs:
           REMOTE_HOST: "${{ secrets.REMOTE_HOST }}"
           REMOTE_DIR: "${{ secrets.REMOTE_DIR }}"
           SERVICE_NAME: "${{ secrets.SERVICE_NAME }}"
-          PEM_FILE: "Certificates/floom-gateway-pair.pem"
