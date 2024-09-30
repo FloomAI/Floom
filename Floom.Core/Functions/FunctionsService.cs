@@ -293,6 +293,9 @@ public class FunctionsService : IFunctionsService
             Console.WriteLine("Function: " + function.Id + ", name: " + function.name + ", userId: " + function.userId);
             var user = await _userRepository.Get(function.userId, "_id");
             if (user == null)
+            {
+                continue;
+            }
             Console.WriteLine("User: " + user.Id + ", username: " + user.username + ", nickname: " + user.nickname);
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
 
