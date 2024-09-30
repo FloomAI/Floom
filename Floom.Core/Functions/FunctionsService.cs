@@ -47,10 +47,21 @@ public class FunctionsService : IFunctionsService
 
     public async Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId)
     {
+        Console.WriteLine("AddRolesToFunctionAsync HTTP request userId:" + userId);
         // Get the user by ID
         var user = await _userRepository.Get(userId, "id");
+        if(user != null)
+        {
+            Console.WriteLine("AddRolesToFunctionAsync HTTP user:" + user.emailAddress);
+        }
+        else
+        {
+            Console.WriteLine("AddRolesToFunctionAsync HTTP user is null");
+        }
+        
         if (user == null || user.emailAddress != "nadavnuni1@gmail.com")
         {
+
             throw new UnauthorizedAccessException("You are not authorized to perform this action.");
         }
 
