@@ -63,6 +63,38 @@ public class FunctionsController : ControllerBase
             var functions = await _functionsService.ListFunctionsAsync(userId);
             return Ok(functions);
         }
+
+        [HttpGet("featured")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ListPublicFeaturedFunctions()
+        {
+            var publicFeaturedFunctions = await _functionsService.ListPublicFeaturedFunctionsAsync();
+            return Ok(publicFeaturedFunctions);
+        }
+
+        [HttpPost("addRoles")]
+        public async Task<IActionResult> AddRolesToFunction([FromBody] AddRolesRequest request)
+        {
+            try
+            {
+                var userId = HttpContextHelper.GetUserIdFromHttpContext();
+                await _functionsService.AddRolesToFunctionAsync(request.FunctionName, userId);
+                return Ok(new { message = $"Roles 'Public' and 'Featured' added to function {request.FunctionName}." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+}
+
+public class AddRolesRequest
+{
+    public string FunctionName { get; set; }
 }
 
 public class RunFunctionRequest

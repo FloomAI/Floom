@@ -6,26 +6,76 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
+using Floom.Auth;
 
 public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
-
-    Task<List<dynamic>> ListFunctionsAsync(string userId);
+    Task<List<FunctionDto>> ListFunctionsAsync(string userId);
+    Task<List<FunctionDto>> ListPublicFeaturedFunctionsAsync();
+    Task<FunctionEntity?> FindFunctionByNameAsync(string functionName);
+    Task UpdateFunctionAsync(FunctionEntity functionEntity);
+    Task AddRolesToFunctionAsync(string functionName, string userId);
 }
 
 public class FunctionsService : IFunctionsService
 {
     private readonly FloomAssetsRepository _floomAssetsRepository;
     private readonly IRepository<FunctionEntity> _repository;
+
+    private readonly IRepository<UserEntity> _userRepository;
     private readonly HttpClient _httpClient;
 
     public FunctionsService(FloomAssetsRepository floomAssetsRepository, IRepositoryFactory repositoryFactory, HttpClient httpClient)
     {
         _floomAssetsRepository = floomAssetsRepository;
         _repository = repositoryFactory.Create<FunctionEntity>();
+        _userRepository = repositoryFactory.Create<UserEntity>();
         _httpClient = httpClient;
+    }
+
+    public async Task<FunctionEntity?> FindFunctionByNameAsync(string functionName)
+    {
+        return await _repository.FindByCondition(f => f.name == functionName);
+    }
+
+    public async Task UpdateFunctionAsync(FunctionEntity functionEntity)
+    {
+        await _repository.UpsertEntity(functionEntity, functionEntity.Id, "Id");
+    }
+
+    public async Task AddRolesToFunctionAsync(string functionName, string userId)
+    {
+        // Get the user by ID
+        var user = await _userRepository.Get(userId, "id");
+        if (user == null || user.emailAddress != "nadavnuni1@gmail.com")
+        {
+            throw new UnauthorizedAccessException("You are not authorized to perform this action.");
+        }
+
+        // Find the function by name
+        var functionEntity = await FindFunctionByNameAsync(functionName);
+        if (functionEntity == null)
+        {
+            throw new Exception("Function not found.");
+        }
+
+        // Add the roles "Public" and "Featured" to the function
+        if (functionEntity.roles == null)
+        {
+            functionEntity.roles = new string[] { Roles.Public, Roles.Featured };
+        }
+        else
+        {
+            var rolesList = functionEntity.roles.ToList();
+            if (!rolesList.Contains(Roles.Public)) rolesList.Add(Roles.Public);
+            if (!rolesList.Contains(Roles.Featured)) rolesList.Add(Roles.Featured);
+            functionEntity.roles = rolesList.ToArray();
+        }
+
+        // Update the function in the repository
+        await UpdateFunctionAsync(functionEntity);
     }
 
     public async Task<string> DeployFunctionAsync(string filePath, string userId)
@@ -190,10 +240,78 @@ public class FunctionsService : IFunctionsService
         }
     }
 
-    public async Task<List<dynamic>> ListFunctionsAsync(string userId)
+    public async Task<List<FunctionDto>> ListFunctionsAsync(string userId)
     {
         var functions = await _repository.ListByConditionAsync(f => f.userId == userId);
-        var result = functions.Select(f => new { f.name, f.description, f.runtimeLanguage, f.runtimeFramework }).ToList<dynamic>();
+    
+        var result = new List<FunctionDto>();
+
+        foreach (var function in functions)
+        {
+            // Fetch the user details for each function's userId
+            var user = await _userRepository.Get(function.userId, "id");
+
+            var authorName = !string.IsNullOrEmpty(user?.nickname) ? user.nickname : user?.username;
+
+            result.Add(new FunctionDto
+            {
+                name = function.name,
+                description = function.description,
+                runtimeLanguage = function.runtimeLanguage,
+                runtimeFramework = function.runtimeFramework,
+                author = authorName,  // Using the author's username or nickname
+                version = function.version,
+                rating = function.rating,
+                downloads = function.downloads,
+                parameters = function.parameters.Select(p => new ParameterDto
+                {
+                    name = p.name,
+                    description = p.description,
+                    required = p.required,
+                    defaultValue = p.defaultValue
+                }).ToList()
+            });
+        }
+
+        return result;
+
+    }
+
+
+    public async Task<List<FunctionDto>> ListPublicFeaturedFunctionsAsync()
+    {
+        var publicFeaturedFunctions = await _repository.ListByConditionAsync(
+            f => f.roles != null && f.roles.Contains(Roles.Public) && f.roles.Contains(Roles.Featured)
+        );
+
+        // Assuming a method GetUserByIdAsync(string userId) to fetch the user entity
+        var result = new List<FunctionDto>();
+
+        foreach (var function in publicFeaturedFunctions)
+        {
+            var user = await _userRepository.Get(function.userId, "id");
+            var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
+
+            result.Add(new FunctionDto
+            {
+                name = function.name,
+                description = function.description,
+                runtimeLanguage = function.runtimeLanguage,
+                runtimeFramework = function.runtimeFramework,
+                author = authorName,  // Use author's username or nickname
+                version = function.version,
+                rating = function.rating,
+                downloads = function.downloads,
+                parameters = function.parameters.Select(p => new ParameterDto
+                {
+                    name = p.name,
+                    description = p.description,
+                    required = p.required,
+                    defaultValue = p.defaultValue
+                }).ToList()
+            });
+        }
+
         return result;
     }
 }

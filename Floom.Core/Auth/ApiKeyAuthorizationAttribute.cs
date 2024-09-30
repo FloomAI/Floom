@@ -11,7 +11,7 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
 
     public ApiKeyAuthorizationAttribute()
     {
-        if(Environment.GetEnvironmentVariable("FLOOM_AUTHENTICATION") != null)
+        if (Environment.GetEnvironmentVariable("FLOOM_AUTHENTICATION") != null)
         {
             var useAuthentication = Environment.GetEnvironmentVariable("FLOOM_AUTHENTICATION");
             _shouldEnforceAuthorization = useAuthentication == "true";
@@ -24,9 +24,16 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
 
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
+        // Check if the AllowAnonymous attribute is present
+        if (context.ActionDescriptor.EndpointMetadata.Any(em => em is AllowAnonymousAttribute))
+        {
+            // If AllowAnonymous is present, skip the authorization check
+            return;
+        }
+
         if (!_shouldEnforceAuthorization)
         {
-            // If authorization is disabled skip the check.
+            // If authorization is disabled, skip the check.
             return;
         }
 
@@ -45,7 +52,7 @@ public class ApiKeyAuthorizationAttribute : Attribute, IAsyncAuthorizationFilter
             context.Result = new UnauthorizedResult();
             return;
         }
-        
+
         var existingApiKey = await repository.Get(apiKey, "key");
         
         if (existingApiKey == null)
