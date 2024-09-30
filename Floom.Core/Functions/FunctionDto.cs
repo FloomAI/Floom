@@ -5,6 +5,7 @@ public class FunctionDto
     public string runtimeLanguage { get; set; }
     public string runtimeFramework { get; set; }
     public string author { get; set; }
+    public string username { get; set; }
     public string version { get; set; }
     public int rating { get; set; }
     public List<int> downloads { get; set; }

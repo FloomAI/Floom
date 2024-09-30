@@ -142,6 +142,23 @@ public class FunctionsService : IFunctionsService
                 existingFunction.promptUrl = promptFileUrl;
                 existingFunction.dataUrl = dataFileUrl;
                 existingFunction.description = manifest.description;
+
+                if(manifest.parameters == null)
+                {
+                    existingFunction.parameters = new List<Parameter>();
+                }
+                else
+                {
+                    List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
+                    {
+                        name = dto.name,
+                        description = dto.description,
+                        required = dto.required,
+                        defaultValue = dto.defaultValue
+                    }).ToList();
+                    existingFunction.parameters = parameters;
+                }
+
                 await _repository.UpsertEntity(existingFunction, existingFunction.Id, "Id");
                 return existingFunction.Id;
             }
@@ -158,6 +175,21 @@ public class FunctionsService : IFunctionsService
                     dataUrl = dataFileUrl,
                     userId = userId
                 };
+                if(manifest.parameters == null)
+                {
+                    functionEntity.parameters = new List<Parameter>();
+                }
+                else
+                {
+                     List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
+                    {
+                        name = dto.name,
+                        description = dto.description,
+                        required = dto.required,
+                        defaultValue = dto.defaultValue
+                    }).ToList();
+                    functionEntity.parameters = parameters;
+                }
                 await _repository.Insert(functionEntity);
                 return functionEntity.name;
             }
@@ -261,6 +293,7 @@ public class FunctionsService : IFunctionsService
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
+                username = user.username ?? string.Empty, // Set to empty string if null
                 version = function.version ?? string.Empty, // Set to empty string if null
                 rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
                 downloads = function.downloads ?? new List<int>(), // Set to empty list if null
@@ -306,6 +339,7 @@ public class FunctionsService : IFunctionsService
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
+                username = user.username ?? string.Empty, // Set to empty string if null
                 version = function.version ?? string.Empty, // Set to empty string if null
                 rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
                 downloads = function.downloads ?? new List<int>(), // Set to empty list if null
@@ -344,6 +378,7 @@ public class Manifest
     public string name { get; set; }
     public string? description { get; set; }
     public Runtime runtime { get; set; }
+    public List<ParameterDto> parameters { get; set; }
     public Entrypoint entrypoint { get; set; }
 }
 
