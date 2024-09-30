@@ -49,7 +49,7 @@ public class FunctionsService : IFunctionsService
     {
         Console.WriteLine("AddRolesToFunctionAsync HTTP request userId:" + userId);
         // Get the user by ID
-        var user = await _userRepository.Get(userId, "id");
+        var user = await _userRepository.Get(userId, "_id");
         if(user != null)
         {
             Console.WriteLine("AddRolesToFunctionAsync HTTP user:" + user.emailAddress);
@@ -58,7 +58,7 @@ public class FunctionsService : IFunctionsService
         {
             Console.WriteLine("AddRolesToFunctionAsync HTTP user is null");
         }
-        
+
         if (user == null || user.emailAddress != "nadavnuni1@gmail.com")
         {
 
