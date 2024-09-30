@@ -13,9 +13,9 @@ public class FunctionEntity: DatabaseEntity
     public string userId { get; set; }
     public string[]? roles { get; set; }
 
-    public string version { get; set; } // Version of the function
-    public int rating { get; set; } // Rating (e.g., 4 out of 5)
-    public List<int> downloads { get; set; } = new(); // Download statistics over time
+    public string? version { get; set; } // Version of the function
+    public int? rating { get; set; } // Rating (e.g., 4 out of 5)
+    public List<int>? downloads { get; set; } = new(); // Download statistics over time
     public List<Parameter> parameters { get; set; } = new(); // Parameters required for the function
 }
 

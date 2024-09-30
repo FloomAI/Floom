@@ -47,17 +47,8 @@ public class FunctionsService : IFunctionsService
 
     public async Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId)
     {
-        Console.WriteLine("AddRolesToFunctionAsync HTTP request userId:" + userId);
         // Get the user by ID
         var user = await _userRepository.Get(userId, "_id");
-        if(user != null)
-        {
-            Console.WriteLine("AddRolesToFunctionAsync HTTP user:" + user.emailAddress);
-        }
-        else
-        {
-            Console.WriteLine("AddRolesToFunctionAsync HTTP user is null");
-        }
 
         if (user == null || user.emailAddress != "nadavnuni1@gmail.com")
         {
@@ -265,21 +256,21 @@ public class FunctionsService : IFunctionsService
 
             result.Add(new FunctionDto
             {
-                name = function.name,
-                description = function.description,
-                runtimeLanguage = function.runtimeLanguage,
-                runtimeFramework = function.runtimeFramework,
-                author = authorName,  // Using the author's username or nickname
-                version = function.version,
-                rating = function.rating,
-                downloads = function.downloads,
-                parameters = function.parameters.Select(p => new ParameterDto
+                name = function.name ?? string.Empty, // Set to empty string if null
+                description = function.description ?? string.Empty, // Set to empty string if null
+                runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
+                runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
+                author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
+                version = function.version ?? string.Empty, // Set to empty string if null
+                rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
+                downloads = function.downloads ?? new List<int>(), // Set to empty list if null
+                parameters = function.parameters?.Select(p => new ParameterDto
                 {
-                    name = p.name,
-                    description = p.description,
-                    required = p.required,
-                    defaultValue = p.defaultValue
-                }).ToList()
+                    name = p.name ?? string.Empty, // Set to empty string if null
+                    description = p.description ?? string.Empty, // Set to empty string if null
+                    required = p.required, // Assuming this is a boolean, keep as is
+                    defaultValue = p.defaultValue ?? string.Empty // Set to empty string if null
+                }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
         }
 
@@ -304,22 +295,23 @@ public class FunctionsService : IFunctionsService
 
             result.Add(new FunctionDto
             {
-                name = function.name,
-                description = function.description,
-                runtimeLanguage = function.runtimeLanguage,
-                runtimeFramework = function.runtimeFramework,
-                author = authorName,  // Use author's username or nickname
-                version = function.version,
-                rating = function.rating,
-                downloads = function.downloads,
-                parameters = function.parameters.Select(p => new ParameterDto
+                name = function.name ?? string.Empty, // Set to empty string if null
+                description = function.description ?? string.Empty, // Set to empty string if null
+                runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
+                runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
+                author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
+                version = function.version ?? string.Empty, // Set to empty string if null
+                rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
+                downloads = function.downloads ?? new List<int>(), // Set to empty list if null
+                parameters = function.parameters?.Select(p => new ParameterDto
                 {
-                    name = p.name,
-                    description = p.description,
-                    required = p.required,
-                    defaultValue = p.defaultValue
-                }).ToList()
+                    name = p.name ?? string.Empty, // Set to empty string if null
+                    description = p.description ?? string.Empty, // Set to empty string if null
+                    required = p.required, // Assuming this is a boolean, keep as is
+                    defaultValue = p.defaultValue ?? string.Empty // Set to empty string if null
+                }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
+
         }
 
         return result;
