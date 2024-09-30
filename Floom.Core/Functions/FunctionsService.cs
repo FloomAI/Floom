@@ -250,7 +250,7 @@ public class FunctionsService : IFunctionsService
         foreach (var function in functions)
         {
             // Fetch the user details for each function's userId
-            var user = await _userRepository.Get(function.userId, "id");
+            var user = await _userRepository.Get(function.userId, "_id");
 
             var authorName = !string.IsNullOrEmpty(user?.nickname) ? user.nickname : user?.username;
 
@@ -290,7 +290,7 @@ public class FunctionsService : IFunctionsService
 
         foreach (var function in publicFeaturedFunctions)
         {
-            var user = await _userRepository.Get(function.userId, "id");
+            var user = await _userRepository.Get(function.userId, "_id");
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
 
             result.Add(new FunctionDto
