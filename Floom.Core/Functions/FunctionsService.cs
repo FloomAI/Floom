@@ -14,9 +14,9 @@ public interface IFunctionsService
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
     Task<List<FunctionDto>> ListFunctionsAsync(string userId);
     Task<List<FunctionDto>> ListPublicFeaturedFunctionsAsync();
-    Task<FunctionEntity?> FindFunctionByNameAsync(string functionName);
+    Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
     Task UpdateFunctionAsync(FunctionEntity functionEntity);
-    Task AddRolesToFunctionAsync(string functionName, string userId);
+    Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId);
 }
 
 public class FunctionsService : IFunctionsService
@@ -35,9 +35,9 @@ public class FunctionsService : IFunctionsService
         _httpClient = httpClient;
     }
 
-    public async Task<FunctionEntity?> FindFunctionByNameAsync(string functionName)
+    public async Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId)
     {
-        return await _repository.FindByCondition(f => f.name == functionName);
+        return await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUserId);
     }
 
     public async Task UpdateFunctionAsync(FunctionEntity functionEntity)
@@ -45,7 +45,7 @@ public class FunctionsService : IFunctionsService
         await _repository.UpsertEntity(functionEntity, functionEntity.Id, "Id");
     }
 
-    public async Task AddRolesToFunctionAsync(string functionName, string userId)
+    public async Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId)
     {
         // Get the user by ID
         var user = await _userRepository.Get(userId, "id");
@@ -55,7 +55,7 @@ public class FunctionsService : IFunctionsService
         }
 
         // Find the function by name
-        var functionEntity = await FindFunctionByNameAsync(functionName);
+        var functionEntity = await FindFunctionByNameAndUserIdAsync(functionName, functionUserId);
         if (functionEntity == null)
         {
             throw new Exception("Function not found.");
@@ -140,7 +140,6 @@ public class FunctionsService : IFunctionsService
                 existingFunction.promptUrl = promptFileUrl;
                 existingFunction.dataUrl = dataFileUrl;
                 existingFunction.description = manifest.description;
-                //await _repository.Update(existingFunction);
                 await _repository.UpsertEntity(existingFunction, existingFunction.Id, "Id");
                 return existingFunction.Id;
             }

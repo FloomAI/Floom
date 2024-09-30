@@ -78,8 +78,8 @@ public class FunctionsController : ControllerBase
             try
             {
                 var userId = HttpContextHelper.GetUserIdFromHttpContext();
-                await _functionsService.AddRolesToFunctionAsync(request.FunctionName, userId);
-                return Ok(new { message = $"Roles 'Public' and 'Featured' added to function {request.FunctionName}." });
+                await _functionsService.AddRolesToFunctionAsync(request.functionName, request.userId, userId);
+                return Ok(new { message = $"Roles 'Public' and 'Featured' added to function {request.functionName}." });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -94,7 +94,8 @@ public class FunctionsController : ControllerBase
 
 public class AddRolesRequest
 {
-    public string FunctionName { get; set; }
+    public string functionName { get; set; }
+    public string userId { get; set; }
 }
 
 public class RunFunctionRequest

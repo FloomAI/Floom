@@ -88,6 +88,7 @@ public class AccountController : ControllerBase
 
         using (var httpClient = new HttpClient())
         {
+            // Exchange code for access token
             var tokenResponse = await httpClient.PostAsync("https://github.com/login/oauth/access_token", new FormUrlEncodedContent(new[]
             {
                 new KeyValuePair<string, string>("client_id", clientId),
@@ -96,20 +97,18 @@ public class AccountController : ControllerBase
                 new KeyValuePair<string, string>("state", request.State)
             }));
 
-            var tokenResponseBody = await tokenResponse.Content.ReadAsStringAsync();
-
             tokenResponse.EnsureSuccessStatusCode();
+            var tokenResponseBody = await tokenResponse.Content.ReadAsStringAsync();
             var queryParams = System.Web.HttpUtility.ParseQueryString(tokenResponseBody);
             var accessToken = queryParams["access_token"];
 
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
             httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("floom.ai");
 
+            // Fetch user information
             var userResponse = await httpClient.GetAsync("https://api.github.com/user");
-
-            var userResponseBody = await userResponse.Content.ReadAsStringAsync();
-
             userResponse.EnsureSuccessStatusCode();
+            var userResponseBody = await userResponse.Content.ReadAsStringAsync();
             var user = JObject.Parse(userResponseBody);
 
             var fullName = user["name"]?.ToString(); // GitHub's "name" field
@@ -117,18 +116,22 @@ public class AccountController : ControllerBase
             var firstName = names?.Length > 0 ? names[0] : null;
             var lastName = names?.Length > 1 ? names[1] : null;
 
+            // Fetch user emails
             var emailResponse = await httpClient.GetAsync("https://api.github.com/user/emails");
-
-            var emailResponseBody = await emailResponse.Content.ReadAsStringAsync();
-
             emailResponse.EnsureSuccessStatusCode();
+            var emailResponseBody = await emailResponse.Content.ReadAsStringAsync();
             var emails = JArray.Parse(emailResponseBody);
 
-            // Process user and email data as needed
-            // Save to your database and generate session token or JWT
-            var response = await _service.RegisterOrLoginUserAsync("github", emails.First().ToString(), firstName, lastName);
+            // Extract the primary email address
+            var primaryEmail = emails.FirstOrDefault(e => (bool)e["primary"])?["email"]?.ToString();
 
-            Console.WriteLine($"Email response body: {emails.First().ToString()}");
+            if (string.IsNullOrEmpty(primaryEmail))
+            {
+                return BadRequest(new { message = "No primary email found." });
+            }
+
+            // Save user data to your database
+            var response = await _service.RegisterOrLoginUserAsync("github", primaryEmail, firstName, lastName);
 
             var sessionToken = response.ApiKey;
 
