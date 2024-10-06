@@ -13,7 +13,8 @@ namespace Floom.Functions;
 public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
-    Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
+    Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null);
+    Task<string> RunFeaturedFunctionAsync(string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null);
     Task<List<FunctionDto>> ListFunctionsAsync(string userId);
     Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync();
     Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
@@ -245,7 +246,7 @@ public class FunctionsService : IFunctionsService
         }
     }
 
-    public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt)
+    public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null)
     {
         Console.WriteLine("RunFunctionAsync userId:" + userId);
         // 1. Get the Function entity by userId and functionName
@@ -256,6 +257,32 @@ public class FunctionsService : IFunctionsService
         {
             throw new Exception("Function not found.");
         }
+        
+        return await RunFunctionInternal(functionEntity, userPrompt, parameterDtos);
+    }
+
+    public async Task<string> RunFeaturedFunctionAsync(string functionId, string userPrompt, List<ParameterDto>? parameterDtos)
+    {
+        // get function by name and by username
+        // this is structure function.name + "-" + user.username;
+        // should be the last part of the functionId split by "-", functionId could have multiple "-" in it
+        var parts = functionId.Split("-");
+        var functionUsername = parts[^1];
+        var functionUserId = await _userRepository.Get(functionUsername, "username");
+        var functionName = string.Join("-", parts[..^1]);
+        // var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
+        var functionEntity = await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUserId.Id);
+        //
+        if (functionEntity == null)
+        {
+            throw new Exception("Function not found.");
+        }
+        
+        return await RunFunctionInternal(functionEntity, userPrompt, parameterDtos);
+    }
+
+    private async Task<string> RunFunctionInternal(FunctionEntity functionEntity, string userPrompt, List<ParameterDto> parameterDtos)
+    {
         // 2. Get the promptUrl file
         var promptFileUrl = functionEntity.promptUrl;
 
@@ -283,11 +310,13 @@ public class FunctionsService : IFunctionsService
             fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
             form.Add(fileContent, "file", "prompt.py");
 
+            // convert parameterDtos to dictionary and set as variables
+            var variables = parameterDtos.ToDictionary(p => p.name, p => p.defaultValue);
             // Add the config
             var config = new
             {
                 input = userPrompt,
-                variables = new { language = "hebrew" },
+                variables,
                 config = new { },
                 env = new { OPENAI_API_KEY = Environment.GetEnvironmentVariable("OPENAI_API_KEY") }
             };
@@ -310,7 +339,7 @@ public class FunctionsService : IFunctionsService
             }
         }
     }
-
+    
     public async Task<List<FunctionDto>> ListFunctionsAsync(string userId)
     {
         var functions = await _repository.ListByConditionAsync(f => f.userId == userId);

@@ -53,7 +53,7 @@ public class FunctionsController : ControllerBase
         public async Task<IActionResult> RunFunction([FromBody] RunFunctionRequest request)
         {
             var userId = HttpContextHelper.GetUserIdFromHttpContext();
-            var result = await _functionsService.RunFunctionAsync(userId, request.function, request.prompt);
+            var result = await _functionsService.RunFunctionAsync(userId, request.function, request.prompt, request.parameters);
             return Ok(result);
         }
 
@@ -71,6 +71,14 @@ public class FunctionsController : ControllerBase
         {
             var publicFeaturedFunctions = await _functionsService.ListPublicFeaturedFunctionsAsync();
             return Ok(publicFeaturedFunctions);
+        }
+
+        [HttpPost("featured/run")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RunFeaturedFunction([FromBody] RunFunctionRequest request)
+        {
+            var result = await _functionsService.RunFeaturedFunctionAsync(request.function, request.prompt, request.parameters);
+            return Ok(result);
         }
 
         [HttpPost("addRoles")]
@@ -122,4 +130,5 @@ public class RunFunctionRequest
 {
     public string function { get; set; }
     public string prompt { get; set; }
+    public List<ParameterDto>? parameters { get; set; }
 }
