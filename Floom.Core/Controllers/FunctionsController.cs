@@ -130,5 +130,5 @@ public class RunFunctionRequest
 {
     public string function { get; set; }
     public string prompt { get; set; }
-    public List<ParameterDto>? parameters { get; set; }
+    public Dictionary<string, string>? parameters { get; set; }
 }

@@ -13,8 +13,8 @@ namespace Floom.Functions;
 public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
-    Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null);
-    Task<string> RunFeaturedFunctionAsync(string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null);
+    Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, Dictionary<string, string>? parameters);
+    Task<string> RunFeaturedFunctionAsync(string functionName, string userPrompt, Dictionary<string, string>? parameters);
     Task<List<FunctionDto>> ListFunctionsAsync(string userId);
     Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync();
     Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
@@ -246,7 +246,7 @@ public class FunctionsService : IFunctionsService
         }
     }
 
-    public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, List<ParameterDto>? parameterDtos = null)
+    public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, Dictionary<string, string>? parameters)
     {
         Console.WriteLine("RunFunctionAsync userId:" + userId);
         // 1. Get the Function entity by userId and functionName
@@ -258,30 +258,38 @@ public class FunctionsService : IFunctionsService
             throw new Exception("Function not found.");
         }
         
-        return await RunFunctionInternal(functionEntity, userPrompt, parameterDtos);
+        return await RunFunctionInternal(functionEntity, userPrompt, parameters);
     }
 
-    public async Task<string> RunFeaturedFunctionAsync(string functionId, string userPrompt, List<ParameterDto>? parameterDtos)
+    public async Task<string> RunFeaturedFunctionAsync(string functionId, string userPrompt, Dictionary<string, string>? parameters)
     {
         // get function by name and by username
         // this is structure function.name + "-" + user.username;
         // should be the last part of the functionId split by "-", functionId could have multiple "-" in it
         var parts = functionId.Split("-");
+        if (parts.Length < 2)
+        {
+            throw new Exception("Invalid functionId.");
+        }
         var functionUsername = parts[^1];
-        var functionUserId = await _userRepository.Get(functionUsername, "username");
+        var functionUser = await _userRepository.Get(functionUsername, "username");
+        if (functionUser?.Id == null)
+        {
+            throw new Exception("User not found.");
+        }
         var functionName = string.Join("-", parts[..^1]);
         // var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
-        var functionEntity = await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUserId.Id);
+        var functionEntity = await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUser.Id);
         //
         if (functionEntity == null)
         {
             throw new Exception("Function not found.");
         }
         
-        return await RunFunctionInternal(functionEntity, userPrompt, parameterDtos);
+        return await RunFunctionInternal(functionEntity, userPrompt, parameters);
     }
 
-    private async Task<string> RunFunctionInternal(FunctionEntity functionEntity, string userPrompt, List<ParameterDto> parameterDtos)
+    private async Task<string> RunFunctionInternal(FunctionEntity functionEntity, string userPrompt, Dictionary<string, string>? parameters)
     {
         // 2. Get the promptUrl file
         var promptFileUrl = functionEntity.promptUrl;
@@ -311,12 +319,12 @@ public class FunctionsService : IFunctionsService
             form.Add(fileContent, "file", "prompt.py");
 
             // convert parameterDtos to dictionary and set as variables
-            var variables = parameterDtos.ToDictionary(p => p.name, p => p.defaultValue);
             // Add the config
+            // parameters is a dictionary of key-value pairs, could be null, in case of null do not add to the config
             var config = new
             {
                 input = userPrompt,
-                variables,
+                variables = parameters,
                 config = new { },
                 env = new { OPENAI_API_KEY = Environment.GetEnvironmentVariable("OPENAI_API_KEY") }
             };
