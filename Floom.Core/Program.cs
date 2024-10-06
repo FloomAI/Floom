@@ -66,14 +66,16 @@ builder.Services.AddHttpsRedirection(options =>
     options.HttpsPort = 443;
 });
 
+// add localhost:3000 to the list of allowed origins, also add www.floom.ai and floom.ai
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
     {
-        builder.WithOrigins("https://console.floom.ai")
-               .AllowAnyHeader()
-               .AllowAnyMethod()
-               .AllowCredentials();
+        builder.WithOrigins("https://console.floom.ai", "http://localhost:3000", "https://www.floom.ai", "https://floom.ai")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
