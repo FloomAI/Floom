@@ -377,8 +377,12 @@ public class FunctionsService : IFunctionsService
                     name = p.name ?? string.Empty, // Set to empty string if null
                     description = p.description ?? string.Empty, // Set to empty string if null
                     required = p.required, // Assuming this is a boolean, keep as is
-                    defaultValue = p.defaultValue ?? string.Empty // Set to empty string if null
-                }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
+                    defaultValue = p.defaultValue is string 
+                        ? p.defaultValue // If it's a string, keep it as string
+                        : p.defaultValue is IEnumerable<object> array 
+                            ? array.ToArray() // If it's an array, return the array
+                            : null // If it's neither, return null
+                    }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
         }
 
@@ -421,7 +425,11 @@ public class FunctionsService : IFunctionsService
                     name = p.name ?? string.Empty, // Set to empty string if null
                     description = p.description ?? string.Empty, // Set to empty string if null
                     required = p.required, // Assuming this is a boolean, keep as is
-                    defaultValue = p.defaultValue ?? string.Empty // Set to empty string if null
+                    defaultValue = p.defaultValue is string 
+                        ? p.defaultValue // If it's a string, keep it as string
+                        : p.defaultValue is IEnumerable<object> array 
+                            ? array.ToArray() // If it's an array, return the array
+                            : null // If it's neither, return null
                 }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
         }

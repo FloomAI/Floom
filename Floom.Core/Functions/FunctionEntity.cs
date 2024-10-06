@@ -24,7 +24,7 @@ public class Parameter
     public string name { get; set; }
     public string? description { get; set; }
     public bool required { get; set; }
-    public string? defaultValue { get; set; }
+    public object? defaultValue { get; set; }
 }
 
 public static class Roles
