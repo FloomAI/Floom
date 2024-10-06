@@ -1,22 +1,25 @@
 using System.IO.Compression;
+using System.Net.Http.Headers;
 using System.Text;
 using Floom.Assets;
+using Floom.Auth;
 using Floom.Repository;
+using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using Newtonsoft.Json;
-using System.Net.Http.Headers;
-using Floom.Auth;
+
+namespace Floom.Functions;
 
 public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt);
     Task<List<FunctionDto>> ListFunctionsAsync(string userId);
-    Task<List<FunctionDto>> ListPublicFeaturedFunctionsAsync();
+    Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync();
     Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
     Task UpdateFunctionAsync(FunctionEntity functionEntity);
     Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId);
+    Task RemoveRolesToFunctionAsync(string functionName, string functionUserId, string userId);
 }
 
 public class FunctionsService : IFunctionsService
@@ -50,7 +53,7 @@ public class FunctionsService : IFunctionsService
         // Get the user by ID
         var user = await _userRepository.Get(userId, "_id");
 
-        if (user == null || user.emailAddress != "nadavnuni1@gmail.com")
+        if (user is not { emailAddress: "nadavnuni1@gmail.com" })
         {
 
             throw new UnauthorizedAccessException("You are not authorized to perform this action.");
@@ -80,6 +83,39 @@ public class FunctionsService : IFunctionsService
         await UpdateFunctionAsync(functionEntity);
     }
 
+    public async Task RemoveRolesToFunctionAsync(string functionName, string functionUserId, string userId)
+    {
+        // Get the user by ID
+        var user = await _userRepository.Get(userId, "_id");
+
+        if (user is not { emailAddress: "nadavnuni1@gmail.com" })
+        {
+
+            throw new UnauthorizedAccessException("You are not authorized to perform this action.");
+        }
+        
+        // Find the function by name
+        var functionEntity = await FindFunctionByNameAndUserIdAsync(functionName, functionUserId);
+        if (functionEntity == null)
+        {
+            throw new Exception("Function not found.");
+        }
+        
+        // Remove the roles "Public" and "Featured" from the function
+        if (functionEntity.roles == null)
+        {
+            return;
+        }
+
+        var rolesList = functionEntity.roles.ToList();
+        if (rolesList.Contains(Roles.Public)) rolesList.Remove(Roles.Public);
+        if (rolesList.Contains(Roles.Featured)) rolesList.Remove(Roles.Featured);
+        functionEntity.roles = rolesList.ToArray();
+        
+        // Update the function in the repository
+        await UpdateFunctionAsync(functionEntity);
+    }
+
     public async Task<string> DeployFunctionAsync(string filePath, string userId)
     {
         var tempDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -88,7 +124,12 @@ public class FunctionsService : IFunctionsService
             // 1. Unzip the file
             Directory.CreateDirectory(tempDirectory);
             ZipFile.ExtractToDirectory(filePath, tempDirectory);
-
+            // list all files in the directory
+            var files = Directory.GetFiles(tempDirectory);
+            foreach (var file in files)
+            {
+                Console.WriteLine("File: " + file);
+            }
             // 2. Upload prompt.py to S3
             var promptFilePath = Path.Combine(tempDirectory, "prompt.py");
             if (!File.Exists(promptFilePath))
@@ -181,7 +222,7 @@ public class FunctionsService : IFunctionsService
                 }
                 else
                 {
-                     List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
+                    List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
                     {
                         name = dto.name,
                         description = dto.description,
@@ -215,9 +256,6 @@ public class FunctionsService : IFunctionsService
         {
             throw new Exception("Function not found.");
         }
-
-        Console.WriteLine("FunctionEntity: "+ functionEntity.Id + ",name: " + functionEntity.name + ", promptUrl: " + functionEntity.promptUrl);
-        Console.WriteLine("UserPrompt: " + userPrompt);
         // 2. Get the promptUrl file
         var promptFileUrl = functionEntity.promptUrl;
 
@@ -308,38 +346,36 @@ public class FunctionsService : IFunctionsService
         }
 
         return result;
-
     }
 
 
-    public async Task<List<FunctionDto>> ListPublicFeaturedFunctionsAsync()
+    public async Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync()
     {
         var publicFeaturedFunctions = await _repository.ListByConditionAsync(
             f => f.roles != null && f.roles.Contains(Roles.Public) && f.roles.Contains(Roles.Featured)
         );
 
         // Assuming a method GetUserByIdAsync(string userId) to fetch the user entity
-        var result = new List<FunctionDto>();
+        var result = new List<FeaturedFunctionDto>();
 
         foreach (var function in publicFeaturedFunctions)
         {
-            Console.WriteLine("Function: " + function.Id + ", name: " + function.name + ", userId: " + function.userId);
             var user = await _userRepository.Get(function.userId, "_id");
             if (user == null)
             {
                 continue;
             }
-            Console.WriteLine("User: " + user.Id + ", username: " + user.username + ", nickname: " + user.nickname);
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
-
-            result.Add(new FunctionDto
+            // functionId should be the function name + user.username
+            var functionId = function.name + "-" + user.username;
+            result.Add(new FeaturedFunctionDto()
             {
+                id = functionId,
                 name = function.name ?? string.Empty, // Set to empty string if null
                 description = function.description ?? string.Empty, // Set to empty string if null
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
-                username = user.username ?? string.Empty, // Set to empty string if null
                 version = function.version ?? string.Empty, // Set to empty string if null
                 rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
                 downloads = function.downloads ?? new List<int>(), // Set to empty list if null
@@ -351,7 +387,6 @@ public class FunctionsService : IFunctionsService
                     defaultValue = p.defaultValue ?? string.Empty // Set to empty string if null
                 }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
-
         }
 
         return result;
@@ -365,7 +400,6 @@ public class LambdaRunConfig
     public Dictionary<string, string> ConfigSettings { get; set; }
     public Dictionary<string, string> Env { get; set; }
 }
-
 
 
 partial class ManifestDto

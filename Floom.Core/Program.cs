@@ -2,6 +2,7 @@ using Floom.Assets;
 using Floom.Audit;
 using Floom.Auth;
 using Floom.Config;
+using Floom.Functions;
 using Floom.Logs;
 using Floom.Repository;
 using Floom.Repository.DynamoDB;

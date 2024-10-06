@@ -1,4 +1,5 @@
 using Floom.Auth;
+using Floom.Functions;
 using Floom.Utils;
 using Microsoft.AspNetCore.Mvc;
 
@@ -73,7 +74,7 @@ public class FunctionsController : ControllerBase
         }
 
         [HttpPost("addRoles")]
-        public async Task<IActionResult> AddRolesToFunction([FromBody] AddRolesRequest request)
+        public async Task<IActionResult> AddRolesToFunction([FromBody] ModifyRolesRequest request)
         {
             try
             {
@@ -90,9 +91,28 @@ public class FunctionsController : ControllerBase
                 return BadRequest(ex.Message);
             }
         }
+        
+        [HttpPost("removeRoles")]
+        public async Task<IActionResult> RemoveRolesFromFunction([FromBody] ModifyRolesRequest request)
+        {
+            try
+            {
+                var userId = HttpContextHelper.GetUserIdFromHttpContext();
+                await _functionsService.RemoveRolesToFunctionAsync(request.functionName, request.userId, userId);
+                return Ok(new { message = $"Roles 'Public' and 'Featured' removed from function {request.functionName}." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 }
 
-public class AddRolesRequest
+public class ModifyRolesRequest
 {
     public string functionName { get; set; }
     public string userId { get; set; }
