@@ -106,10 +106,11 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseForwardedHeaders();
+app.UseCors(); // Add CORS middleware before authentication and authorization
 
 app.Use(async (context, next) =>
 {
-Console.WriteLine("Handling request: " + context.Request.Method + " " + context.Request.Path);
+    Console.WriteLine("Handling request: " + context.Request.Method + " " + context.Request.Path);
 
     // Handle preflight requests
     if (context.Request.Method == "OPTIONS")
@@ -123,6 +124,8 @@ Console.WriteLine("Handling request: " + context.Request.Method + " " + context.
             context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
             context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Api-Key";
         }
+
+        Console.WriteLine("Returning 204 for preflight request");
 
         context.Response.StatusCode = StatusCodes.Status204NoContent;
         return;
@@ -155,7 +158,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors(); // Add CORS middleware before authentication and authorization
 //app.UseHttpsRedirection();
 app.UseAuthentication(); // Add authentication middleware
 app.UseAuthorization();
