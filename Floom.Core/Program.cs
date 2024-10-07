@@ -125,9 +125,9 @@ app.Use(async (context, next) =>
             context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Api-Key";
         }
 
-        Console.WriteLine("Returning 204 for preflight request");
+        Console.WriteLine("Returning 200 for preflight request");
 
-        context.Response.StatusCode = StatusCodes.Status204NoContent;
+        context.Response.StatusCode = StatusCodes.Status200OK;
         return;
     }
 
