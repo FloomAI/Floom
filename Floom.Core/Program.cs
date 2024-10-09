@@ -14,7 +14,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Floom.Server;
 using Microsoft.AspNetCore.HttpOverrides;
 
-var allowedOrigins = new[] { "https://console.floom.ai", "http://localhost:3000", "https://www.floom.ai", "https://floom.ai" };
+var allowedOrigins = new[] { "https://console.floom.ai", "https://www.floom.ai", "https://floom.ai" };
+// var allowedOrigins = new[] { "http://localhost:3000" };
 
 var builder = WebApplication.CreateBuilder(args);
 
