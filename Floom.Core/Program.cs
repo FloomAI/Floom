@@ -71,16 +71,16 @@ builder.Services.AddHttpsRedirection(options =>
 
 // add localhost:3000 to the list of allowed origins, also add www.floom.ai and floom.ai
 
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.WithOrigins(allowedOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
+// builder.Services.AddCors(options =>
+// {
+//     options.AddDefaultPolicy(builder =>
+//     {
+//         builder.WithOrigins(allowedOrigins)
+//             .AllowAnyHeader()
+//             .AllowAnyMethod()
+//             .AllowCredentials();
+//     });
+// });
 
 // Determine the current environment
 var environment = builder.Environment;
@@ -107,49 +107,49 @@ builder.Services.AddAuthorization();
 var app = builder.Build();
 
 app.UseForwardedHeaders();
-app.UseCors(); // Add CORS middleware before authentication and authorization
+//app.UseCors(); // Add CORS middleware before authentication and authorization
 
 app.Use(async (context, next) =>
 {
     Console.WriteLine("Handling request: " + context.Request.Method + " " + context.Request.Path);
 
     // Handle preflight requests
-    if (context.Request.Method == "OPTIONS")
-    {
-        Console.WriteLine("Handling preflight request (OPTIONS)");
-        var origin = context.Request.Headers["Origin"].ToString();
-        if (allowedOrigins.Contains(origin))
-        {
-            context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-            context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
-            context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Api-Key";
-        }
+    // if (context.Request.Method == "OPTIONS")
+    // {
+    //     Console.WriteLine("Handling preflight request (OPTIONS)");
+    //     var origin = context.Request.Headers["Origin"].ToString();
+    //     if (allowedOrigins.Contains(origin))
+    //     {
+    //         context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+    //         context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+    //         context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS";
+    //         context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Api-Key";
+    //     }
+    //
+    //     Console.WriteLine("Returning 200 for preflight request");
+    //
+    //     context.Response.StatusCode = StatusCodes.Status200OK;
+    //     return;
+    // }
 
-        Console.WriteLine("Returning 200 for preflight request");
-
-        context.Response.StatusCode = StatusCodes.Status200OK;
-        return;
-    }
-
-    if (!context.Response.HasStarted)
-    {
-        context.Response.OnStarting(() =>
-        {
-            Console.WriteLine("Planning to adding CORS headers to response");
-
-            var origin = context.Request.Headers["Origin"].ToString();
-            
-            if (allowedOrigins.Contains(origin))
-            {
-                Console.WriteLine("Adding CORS headers to response for origin: " + origin);
-                //context.Response.Headers["Access-Control-Allow-Origin"] = origin;
-                context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
-            }
-
-            return Task.CompletedTask;
-        });
-    }
+    // if (!context.Response.HasStarted)
+    // {
+    //     context.Response.OnStarting(() =>
+    //     {
+    //         Console.WriteLine("Planning to adding CORS headers to response");
+    //
+    //         var origin = context.Request.Headers["Origin"].ToString();
+    //         
+    //         if (allowedOrigins.Contains(origin))
+    //         {
+    //             Console.WriteLine("Adding CORS headers to response for origin: " + origin);
+    //             context.Response.Headers["Access-Control-Allow-Origin"] = origin;
+    //             context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+    //         }
+    //
+    //         return Task.CompletedTask;
+    //     });
+    // }
 
     await next();
     Console.WriteLine("Finished handling request");

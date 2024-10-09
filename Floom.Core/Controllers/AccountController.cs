@@ -12,7 +12,7 @@ namespace Floom.Controllers;
 [ApiController]
 [Route("/v{version:apiVersion}/[controller]")]
 [ApiVersion("1.0")]
-[EnableCors]
+// [EnableCors]
 public class AccountController : ControllerBase
 {
     private readonly IUsersService _service;
