@@ -136,11 +136,13 @@ app.Use(async (context, next) =>
     {
         context.Response.OnStarting(() =>
         {
-            Console.WriteLine("Adding CORS headers to response");
+            Console.WriteLine("Planning to adding CORS headers to response");
 
             var origin = context.Request.Headers["Origin"].ToString();
+            
             if (allowedOrigins.Contains(origin))
             {
+                Console.WriteLine("Adding CORS headers to response for origin: " + origin);
                 context.Response.Headers["Access-Control-Allow-Origin"] = origin;
                 context.Response.Headers["Access-Control-Allow-Credentials"] = "true";
             }
