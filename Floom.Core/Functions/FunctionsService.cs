@@ -125,12 +125,7 @@ public class FunctionsService : IFunctionsService
             // 1. Unzip the file
             Directory.CreateDirectory(tempDirectory);
             ZipFile.ExtractToDirectory(filePath, tempDirectory);
-            // list all files in the directory
-            var files = Directory.GetFiles(tempDirectory);
-            foreach (var file in files)
-            {
-                Console.WriteLine("File: " + file);
-            }
+
             // 2. Upload prompt.py to S3
             var promptFilePath = Path.Combine(tempDirectory, "prompt.py");
             if (!File.Exists(promptFilePath))
@@ -183,9 +178,14 @@ public class FunctionsService : IFunctionsService
                 existingFunction.runtimeFramework = manifest.runtime.framework;
                 existingFunction.promptUrl = promptFileUrl;
                 existingFunction.dataUrl = dataFileUrl;
-                existingFunction.description = manifest.description;
 
-                if(manifest.parameters == null)
+                // Handle translated fields
+                existingFunction.description = new TranslatedField
+                {
+                    en = manifest.description
+                };
+
+                if (manifest.parameters == null)
                 {
                     existingFunction.parameters = new List<Parameter>();
                 }
@@ -194,7 +194,10 @@ public class FunctionsService : IFunctionsService
                     List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
                     {
                         name = dto.name,
-                        description = dto.description,
+                        description = new TranslatedField
+                        {
+                            en = dto.description
+                        },
                         required = dto.required,
                         defaultValue = dto.defaultValue
                     }).ToList();
@@ -210,14 +213,18 @@ public class FunctionsService : IFunctionsService
                 var functionEntity = new FunctionEntity
                 {
                     name = normalizedFunctionName,
-                    description = manifest.description,
                     runtimeLanguage = manifest.runtime.language,
                     runtimeFramework = manifest.runtime.framework,
                     promptUrl = promptFileUrl,
                     dataUrl = dataFileUrl,
-                    userId = userId
+                    userId = userId,
+                    description = new TranslatedField
+                    {
+                        en = manifest.description
+                    }
                 };
-                if(manifest.parameters == null)
+
+                if (manifest.parameters == null)
                 {
                     functionEntity.parameters = new List<Parameter>();
                 }
@@ -226,12 +233,16 @@ public class FunctionsService : IFunctionsService
                     List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
                     {
                         name = dto.name,
-                        description = dto.description,
+                        description = new TranslatedField
+                        {
+                            en = dto.description
+                        },
                         required = dto.required,
                         defaultValue = dto.defaultValue
                     }).ToList();
                     functionEntity.parameters = parameters;
                 }
+
                 await _repository.Insert(functionEntity);
                 return functionEntity.name;
             }
@@ -351,7 +362,7 @@ public class FunctionsService : IFunctionsService
     public async Task<List<FunctionDto>> ListFunctionsAsync(string userId)
     {
         var functions = await _repository.ListByConditionAsync(f => f.userId == userId);
-    
+
         var result = new List<FunctionDto>();
 
         foreach (var function in functions)
@@ -364,7 +375,7 @@ public class FunctionsService : IFunctionsService
             result.Add(new FunctionDto
             {
                 name = function.name ?? string.Empty, // Set to empty string if null
-                description = function.description ?? string.Empty, // Set to empty string if null
+                description = function.description?.en ?? string.Empty, // Fetch only the English description
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
@@ -375,28 +386,25 @@ public class FunctionsService : IFunctionsService
                 parameters = function.parameters?.Select(p => new ParameterDto
                 {
                     name = p.name ?? string.Empty, // Set to empty string if null
-                    description = p.description ?? string.Empty, // Set to empty string if null
+                    description = p.description?.en ?? string.Empty, // Fetch only the English description
                     required = p.required, // Assuming this is a boolean, keep as is
                     defaultValue = p.defaultValue is string 
                         ? p.defaultValue // If it's a string, keep it as string
                         : p.defaultValue is IEnumerable<object> array 
                             ? array.ToArray() // If it's an array, return the array
                             : null // If it's neither, return null
-                    }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
+                }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
         }
 
         return result;
     }
 
-
     public async Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync()
     {
         var publicFeaturedFunctions = await _repository.ListByConditionAsync(
-            f => f.roles != null && f.roles.Contains(Roles.Public) && f.roles.Contains(Roles.Featured)
-        );
+            f => f.roles != null && f.roles.Contains(Roles.Public) && f.roles.Contains(Roles.Featured));
 
-        // Assuming a method GetUserByIdAsync(string userId) to fetch the user entity
         var result = new List<FeaturedFunctionDto>();
 
         foreach (var function in publicFeaturedFunctions)
@@ -406,32 +414,49 @@ public class FunctionsService : IFunctionsService
             {
                 continue;
             }
+            
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
-            // functionId should be the function name + user.username
             var functionId = function.name + "-" + user.username;
-            result.Add(new FeaturedFunctionDto()
+            
+            result.Add(new FeaturedFunctionDto
             {
                 id = functionId,
-                name = function.name ?? string.Empty, // Set to empty string if null
-                slug = function.slug ?? string.Empty, // Set to empty string if null
-                description = function.description ?? string.Empty, // Set to empty string if null
-                runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
-                runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
-                author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
-                version = function.version ?? string.Empty, // Set to empty string if null
-                rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
-                downloads = function.downloads ?? new List<int>(), // Set to empty list if null
-                parameters = function.parameters?.Select(p => new ParameterDto
+                name = function.name ?? string.Empty,
+                slug = function.slug ?? string.Empty,
+                title = new TranslatedField
                 {
-                    name = p.name ?? string.Empty, // Set to empty string if null
-                    description = p.description ?? string.Empty, // Set to empty string if null
-                    required = p.required, // Assuming this is a boolean, keep as is
-                    defaultValue = p.defaultValue is string 
-                        ? p.defaultValue // If it's a string, keep it as string
-                        : p.defaultValue is IEnumerable<object> array 
-                            ? array.ToArray() // If it's an array, return the array
-                            : null // If it's neither, return null
-                }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
+                    en = function.title?.en ?? string.Empty,
+                    fr = function.title?.fr ?? string.Empty,
+                    es = function.title?.es ?? string.Empty
+                },
+                description = new TranslatedField
+                {
+                    en = function.description?.en ?? string.Empty,
+                    fr = function.description?.fr ?? string.Empty,
+                    es = function.description?.es ?? string.Empty
+                },
+                runtimeLanguage = function.runtimeLanguage ?? string.Empty,
+                runtimeFramework = function.runtimeFramework ?? string.Empty,
+                author = string.IsNullOrEmpty(authorName) ? null : authorName,
+                version = function.version ?? string.Empty,
+                rating = function.rating ?? 0,
+                downloads = function.downloads ?? new List<int>(),
+                parameters = function.parameters?.Select(p => new FeaturedFunctionParameterDto
+                {
+                    name = p.name ?? string.Empty,
+                    description = new TranslatedField
+                    {
+                        en = p.description?.en ?? string.Empty,
+                        fr = p.description?.fr ?? string.Empty,
+                        es = p.description?.es ?? string.Empty
+                    },
+                    required = p.required,
+                    defaultValue = p.defaultValue is string
+                        ? p.defaultValue
+                        : p.defaultValue is IEnumerable<object> array
+                            ? array.ToArray()
+                            : null
+                }).ToList() ?? new List<FeaturedFunctionParameterDto>()
             });
         }
 

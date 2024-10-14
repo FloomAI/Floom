@@ -1,4 +1,5 @@
 using Floom.Base;
+using Floom.Functions;
 using Floom.Repository;
 
 [CollectionName("functions")]
@@ -10,7 +11,9 @@ public class FunctionEntity: DatabaseEntity
     public string runtimeFramework { get; set; }
     public string promptUrl { get; set; }
     public string? dataUrl { get; set; }
-    public string? description { get; set; }
+    public TranslatedField? title { get; set; } // Translated titles
+    public TranslatedField? description { get; set; } // Translated descriptions
+    public TranslatedField? promptPlaceholder { get; set; } // Translated prompt placeholders
     public string userId { get; set; }
     public string[]? roles { get; set; }
 
@@ -23,7 +26,7 @@ public class FunctionEntity: DatabaseEntity
 public class Parameter
 {
     public string name { get; set; }
-    public string? description { get; set; }
+    public TranslatedField? description { get; set; } // Translated descriptions for parameters
     public bool required { get; set; }
     public object? defaultValue { get; set; }
 }
