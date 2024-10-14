@@ -21,6 +21,7 @@ public class FeaturedFunctionDto
     public string slug { get; set; }
     public TranslatedField title { get; set; } // Translated titles
     public TranslatedField description { get; set; } // Translated descriptions
+    public TranslatedField promptPlaceholder { get; set; } // Translated descriptions
     public string runtimeLanguage { get; set; }
     public string runtimeFramework { get; set; }
     public string author { get; set; }

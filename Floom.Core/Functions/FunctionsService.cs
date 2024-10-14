@@ -435,6 +435,12 @@ public class FunctionsService : IFunctionsService
                     fr = function.description?.fr ?? string.Empty,
                     es = function.description?.es ?? string.Empty
                 },
+                promptPlaceholder = new TranslatedField()
+                {
+                    en = function.promptPlaceholder?.en ?? string.Empty,
+                    fr = function.promptPlaceholder?.fr ?? string.Empty,
+                    es = function.promptPlaceholder?.es ?? string.Empty
+                },
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty,
                 runtimeFramework = function.runtimeFramework ?? string.Empty,
                 author = string.IsNullOrEmpty(authorName) ? null : authorName,
