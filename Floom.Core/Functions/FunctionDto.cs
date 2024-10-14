@@ -16,6 +16,7 @@ public class FeaturedFunctionDto
 {
     public string id { get; set; }
     public string name { get; set; }
+    public string slug { get; set; }
     public string description { get; set; }
     public string runtimeLanguage { get; set; }
     public string runtimeFramework { get; set; }

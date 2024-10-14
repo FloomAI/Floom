@@ -413,6 +413,7 @@ public class FunctionsService : IFunctionsService
             {
                 id = functionId,
                 name = function.name ?? string.Empty, // Set to empty string if null
+                slug = function.slug ?? string.Empty, // Set to empty string if null
                 description = function.description ?? string.Empty, // Set to empty string if null
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null

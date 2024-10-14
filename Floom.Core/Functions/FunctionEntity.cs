@@ -5,6 +5,7 @@ using Floom.Repository;
 public class FunctionEntity: DatabaseEntity
 {
     public string name { get; set; }
+    public string slug { get; set; }
     public string runtimeLanguage { get; set; }
     public string runtimeFramework { get; set; }
     public string promptUrl { get; set; }
