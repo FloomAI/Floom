@@ -320,8 +320,7 @@ public class FunctionsService : IFunctionsService
         {
             // Prepare and send the HTTP request
             var client = new HttpClient();
-            // var requestTemp = new HttpRequestMessage(HttpMethod.Post, "https://i4yijg36th.execute-api.us-east-1.amazonaws.com/prompt");
-            var requestTemp = new HttpRequestMessage(HttpMethod.Post, "https://krvzqr98ta.execute-api.us-east-1.amazonaws.com/prod/prompt");
+            var requestTemp = new HttpRequestMessage(HttpMethod.Post, "https://roy1dayo5i.execute-api.us-east-1.amazonaws.com/prompt");
             var form = new MultipartFormDataContent();
 
             // Add the file
