@@ -380,7 +380,7 @@ public class FunctionsService : IFunctionsService
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
                 username = user.username ?? string.Empty, // Set to empty string if null
                 version = function.version ?? string.Empty, // Set to empty string if null
-                rating = function.rating ?? 0, // Set to 0 if null (assuming rating is a numeric type)
+                rating = function.rating ?? 0.0f, // Set to 0 if null (assuming rating is a numeric type)
                 downloads = function.downloads ?? new List<int>(), // Set to empty list if null
                 parameters = function.parameters?.Select(p => new ParameterDto
                 {
@@ -444,7 +444,7 @@ public class FunctionsService : IFunctionsService
                 runtimeFramework = function.runtimeFramework ?? string.Empty,
                 author = string.IsNullOrEmpty(authorName) ? null : authorName,
                 version = function.version ?? string.Empty,
-                rating = function.rating ?? 0,
+                rating = function.rating ?? 0f,
                 downloads = function.downloads ?? new List<int>(),
                 parameters = function.parameters?.Select(p => new FeaturedFunctionParameterDto
                 {

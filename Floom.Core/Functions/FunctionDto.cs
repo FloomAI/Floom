@@ -9,7 +9,7 @@ public class FunctionDto
     public string author { get; set; }
     public string username { get; set; }
     public string version { get; set; }
-    public int rating { get; set; }
+    public double rating { get; set; }
     public List<int> downloads { get; set; }
     public List<ParameterDto> parameters { get; set; } = new();
 }
@@ -26,7 +26,7 @@ public class FeaturedFunctionDto
     public string runtimeFramework { get; set; }
     public string author { get; set; }
     public string version { get; set; }
-    public int rating { get; set; }
+    public double rating { get; set; }
     public List<int> downloads { get; set; }
     public List<FeaturedFunctionParameterDto> parameters { get; set; } = new();
 }
