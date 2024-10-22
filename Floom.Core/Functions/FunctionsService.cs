@@ -485,13 +485,22 @@ public class FunctionsService : IFunctionsService
         //         (f.description != null && Regex.IsMatch(f.description.en ?? string.Empty, query, RegexOptions.IgnoreCase))
         //     ));
 
-        var regexFilter = Builders<FunctionEntity>.Filter.Regex("name", new BsonRegularExpression(query, "i")) |
-                          Builders<FunctionEntity>.Filter.Regex("description.en", new BsonRegularExpression(query, "i"));
+        var regexQuery = new BsonRegularExpression(query, "i");  // 'i' makes the regex case-insensitive
 
+        // Create filters for both the title and description fields
+        var titleFilter = Builders<FunctionEntity>.Filter.Regex("title.en", regexQuery);
+        var descriptionFilter = Builders<FunctionEntity>.Filter.Regex("description.en", regexQuery);
+
+        // Create a role filter to match "Public" roles
         var roleFilter = Builders<FunctionEntity>.Filter.Eq("roles", Roles.Public);
 
-        var finalFilter = Builders<FunctionEntity>.Filter.And(roleFilter, regexFilter);
+        // Combine the filters using OR (|) for title and description and AND (&) for roles
+        var finalFilter = Builders<FunctionEntity>.Filter.And(
+            roleFilter,
+            Builders<FunctionEntity>.Filter.Or(titleFilter, descriptionFilter)
+        );
 
+        // Fetch the results using the combined filter
         var searchResults = await _repository.ListByFilterAsync(finalFilter);
 
         var result = new List<SearchResultFunctionDto>();
