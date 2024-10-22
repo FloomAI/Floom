@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using MongoDB.Driver;
 
 namespace Floom.Repository;
 
@@ -13,4 +14,6 @@ public interface IDatabase<T> where T : DatabaseEntity
     Task<IEnumerable<T>> ReadAllByCondition(Expression<Func<T, bool>> condition);
     Task Upsert(T entity, string uid, string column);
     Task Delete(string id, string uniqueKey);
+    
+    Task<IEnumerable<T>> ReadAllByFilter(FilterDefinition<T> filter);
 }

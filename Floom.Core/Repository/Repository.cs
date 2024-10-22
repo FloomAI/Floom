@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Floom.Utils;
+using MongoDB.Driver;
 
 namespace Floom.Repository;
 
@@ -14,6 +15,8 @@ public interface IRepository<T> where T : DatabaseEntity
     Task<T?> FindByCondition(Expression<Func<T, bool>> condition);
     Task<T?> FindByAttributesAsync(Dictionary<string, object> attributes);
     Task<IEnumerable<T>> ListByConditionAsync(Expression<Func<T, bool>> condition);
+    // New method to support MongoDB filter queries
+    Task<IEnumerable<T>> ListByFilterAsync(FilterDefinition<T> filter);
 }
 
 public class Repository<T> : IRepository<T> where T : DatabaseEntity
@@ -70,5 +73,10 @@ public class Repository<T> : IRepository<T> where T : DatabaseEntity
     public async Task<IEnumerable<T>> ListByConditionAsync(Expression<Func<T, bool>> condition)
     {
         return await _database.ReadAllByCondition(condition);
+    }
+    
+    public async Task<IEnumerable<T>> ListByFilterAsync(FilterDefinition<T> filter)
+    {
+        return await _database.ReadAllByFilter(filter);
     }
 }

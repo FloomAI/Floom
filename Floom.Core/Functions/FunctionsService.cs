@@ -5,6 +5,8 @@ using System.Text.RegularExpressions;
 using Floom.Assets;
 using Floom.Auth;
 using Floom.Repository;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -476,12 +478,21 @@ public class FunctionsService : IFunctionsService
         // Search for function that their description or name contains the query
         
         // Build search expression for MongoDB query
-        var searchResults = await _repository.ListByConditionAsync(f =>
-            f.roles != null && f.roles.Contains(Roles.Public) &&
-            (
-                Regex.IsMatch(f.name, query, RegexOptions.IgnoreCase) || 
-                (f.description != null && Regex.IsMatch(f.description.en ?? string.Empty, query, RegexOptions.IgnoreCase))
-            ));
+        // var searchResults = await _repository.ListByConditionAsync(f =>
+        //     f.roles != null && f.roles.Contains(Roles.Public) &&
+        //     (
+        //         Regex.IsMatch(f.name, query, RegexOptions.IgnoreCase) || 
+        //         (f.description != null && Regex.IsMatch(f.description.en ?? string.Empty, query, RegexOptions.IgnoreCase))
+        //     ));
+
+        var regexFilter = Builders<FunctionEntity>.Filter.Regex("name", new BsonRegularExpression(query, "i")) |
+                          Builders<FunctionEntity>.Filter.Regex("description.en", new BsonRegularExpression(query, "i"));
+
+        var roleFilter = Builders<FunctionEntity>.Filter.Eq("roles", Roles.Public);
+
+        var finalFilter = Builders<FunctionEntity>.Filter.And(roleFilter, regexFilter);
+
+        var searchResults = await _repository.ListByFilterAsync(finalFilter);
 
         var result = new List<SearchResultFunctionDto>();
 

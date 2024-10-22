@@ -3,6 +3,7 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DataModel;
 using Amazon.DynamoDBv2.Model;
 using Floom.Utils;
+using MongoDB.Driver;
 
 namespace Floom.Repository.DynamoDB;
 
@@ -155,6 +156,11 @@ public class DynamoDbDatabase<T> : IDatabase<T> where T : DatabaseEntity, new()
                 await _context.DeleteAsync(itemToDelete);
             }
         }
+    }
+
+    public Task<IEnumerable<T>> ReadAllByFilter(FilterDefinition<T> filter)
+    {
+        throw new NotImplementedException();
     }
 
     Task<IEnumerable<T>> IDatabase<T>.ReadAllByCondition(Expression<Func<T, bool>> condition)

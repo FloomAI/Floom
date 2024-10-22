@@ -100,4 +100,9 @@ public class MongoDatabase<T> : IDatabase<T> where T : DatabaseEntity
 
         await _collection.DeleteOneAsync(filter);
     }
+    
+    public async Task<IEnumerable<T>> ReadAllByFilter(FilterDefinition<T> filter)
+    {
+        return await _collection.Find(filter).ToListAsync();
+    }
 }
