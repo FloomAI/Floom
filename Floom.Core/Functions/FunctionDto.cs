@@ -14,6 +14,13 @@ public class FunctionDto
     public List<ParameterDto> parameters { get; set; } = new();
 }
 
+public class SearchResultFunctionDto
+{
+    public string id { get; set; }
+    public string name { get; set; }
+    public string slug { get; set; }
+}
+    
 public class FeaturedFunctionDto
 {
     public string id { get; set; }

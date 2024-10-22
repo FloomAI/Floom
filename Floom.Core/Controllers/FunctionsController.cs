@@ -81,6 +81,14 @@ public class FunctionsController : ControllerBase
             return Ok(result);
         }
 
+        [HttpPost("search")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchPublicFunctions([FromBody] SearchRequest request)
+        {
+            var functions = await _functionsService.SearchPublicFunctionsAsync(request.query);
+            return Ok(functions);
+        }
+        
         [HttpPost("addRoles")]
         public async Task<IActionResult> AddRolesToFunction([FromBody] ModifyRolesRequest request)
         {
@@ -131,4 +139,9 @@ public class RunFunctionRequest
     public string function { get; set; }
     public string prompt { get; set; }
     public Dictionary<string, string>? parameters { get; set; }
+}
+
+public class SearchRequest
+{
+    public string query { get; set; }
 }

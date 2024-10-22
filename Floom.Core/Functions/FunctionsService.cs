@@ -1,6 +1,7 @@
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using Floom.Assets;
 using Floom.Auth;
 using Floom.Repository;
@@ -17,6 +18,7 @@ public interface IFunctionsService
     Task<string> RunFeaturedFunctionAsync(string functionName, string userPrompt, Dictionary<string, string>? parameters);
     Task<List<FunctionDto>> ListFunctionsAsync(string userId);
     Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync();
+    Task<List<SearchResultFunctionDto>> SearchPublicFunctionsAsync(string query);
     Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
     Task UpdateFunctionAsync(FunctionEntity functionEntity);
     Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId);
@@ -38,7 +40,7 @@ public class FunctionsService : IFunctionsService
         _userRepository = repositoryFactory.Create<UserEntity>();
         _httpClient = httpClient;
     }
-
+    
     public async Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId)
     {
         return await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUserId);
@@ -462,6 +464,43 @@ public class FunctionsService : IFunctionsService
                             ? array.ToArray()
                             : null
                 }).ToList() ?? new List<FeaturedFunctionParameterDto>()
+            });
+        }
+
+        return result;
+    }
+    
+    public async Task<List<SearchResultFunctionDto>> SearchPublicFunctionsAsync(string query)
+    {
+        // Search for functions with the "Public" role
+        // Search for function that their description or name contains the query
+        
+        // Build search expression for MongoDB query
+        var searchResults = await _repository.ListByConditionAsync(f =>
+            f.roles != null && f.roles.Contains(Roles.Public) &&
+            (
+                Regex.IsMatch(f.name, query, RegexOptions.IgnoreCase) || 
+                (f.description != null && Regex.IsMatch(f.description.en ?? string.Empty, query, RegexOptions.IgnoreCase))
+            ));
+
+        var result = new List<SearchResultFunctionDto>();
+
+        foreach (var function in searchResults)
+        {
+            var user = await _userRepository.Get(function.userId, "_id");
+            if (user == null)
+            {
+                continue;
+            }
+            
+            var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
+            var functionId = function.name + "-" + user.username;
+            
+            result.Add(new SearchResultFunctionDto
+            {
+                id = functionId,
+                name = function.name ?? string.Empty,
+                slug = function.slug ?? string.Empty
             });
         }
 
