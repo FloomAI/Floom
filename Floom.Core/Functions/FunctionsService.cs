@@ -519,8 +519,21 @@ public class FunctionsService : IFunctionsService
             result.Add(new SearchResultFunctionDto
             {
                 id = functionId,
-                name = function.name ?? string.Empty,
-                slug = function.slug ?? string.Empty
+                slug = function.slug ?? string.Empty,
+                author = authorName,
+                rating = function.rating ?? 0f,
+                title = new TranslatedField
+                {
+                    en = function.title?.en ?? string.Empty,
+                    fr = function.title?.fr ?? string.Empty,
+                    es = function.title?.es ?? string.Empty
+                },
+                description = new TranslatedField
+                {
+                    en = function.description?.en ?? string.Empty,
+                    fr = function.description?.fr ?? string.Empty,
+                    es = function.description?.es ?? string.Empty
+                }
             });
         }
 

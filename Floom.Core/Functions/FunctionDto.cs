@@ -17,8 +17,11 @@ public class FunctionDto
 public class SearchResultFunctionDto
 {
     public string id { get; set; }
-    public string name { get; set; }
     public string slug { get; set; }
+    public TranslatedField title { get; set; } // Translated titles
+    public TranslatedField description { get; set; } // Translated descriptions
+    public string author { get; set; }
+    public double rating { get; set; }
 }
     
 public class FeaturedFunctionDto
