@@ -48,7 +48,6 @@ public class FunctionsController : ControllerBase
             }
         }
 
-
         [HttpPost("run")]
         public async Task<IActionResult> RunFunction([FromBody] RunFunctionRequest request)
         {
@@ -72,15 +71,7 @@ public class FunctionsController : ControllerBase
             var publicFeaturedFunctions = await _functionsService.ListPublicFeaturedFunctionsAsync();
             return Ok(publicFeaturedFunctions);
         }
-
-        [HttpPost("featured/run")]
-        [AllowAnonymous]
-        public async Task<IActionResult> RunFeaturedFunction([FromBody] RunFunctionRequest request)
-        {
-            var result = await _functionsService.RunFeaturedFunctionAsync(request.function, request.prompt, request.parameters);
-            return Ok(result);
-        }
-
+        
         [HttpPost("search")]
         [AllowAnonymous]
         public async Task<IActionResult> SearchPublicFunctions([FromBody] SearchRequest request)

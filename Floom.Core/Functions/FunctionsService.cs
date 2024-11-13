@@ -1,7 +1,6 @@
 using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text;
-using System.Text.RegularExpressions;
 using Floom.Assets;
 using Floom.Auth;
 using Floom.Repository;
@@ -17,12 +16,9 @@ public interface IFunctionsService
 {
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, Dictionary<string, string>? parameters);
-    Task<string> RunFeaturedFunctionAsync(string functionName, string userPrompt, Dictionary<string, string>? parameters);
-    Task<List<FunctionDto>> ListFunctionsAsync(string userId);
-    Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync();
-    Task<List<SearchResultFunctionDto>> SearchPublicFunctionsAsync(string query);
-    Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId);
-    Task UpdateFunctionAsync(FunctionEntity functionEntity);
+    Task<List<BaseFunctionDto>> ListFunctionsAsync(string userId);
+    Task<List<BaseFunctionDto>> ListPublicFeaturedFunctionsAsync();
+    Task<List<BaseFunctionDto>> SearchPublicFunctionsAsync(string query);
     Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId);
     Task RemoveRolesToFunctionAsync(string functionName, string functionUserId, string userId);
 }
@@ -33,14 +29,12 @@ public class FunctionsService : IFunctionsService
     private readonly IRepository<FunctionEntity> _repository;
 
     private readonly IRepository<UserEntity> _userRepository;
-    private readonly HttpClient _httpClient;
 
     public FunctionsService(FloomAssetsRepository floomAssetsRepository, IRepositoryFactory repositoryFactory, HttpClient httpClient)
     {
         _floomAssetsRepository = floomAssetsRepository;
         _repository = repositoryFactory.Create<FunctionEntity>();
         _userRepository = repositoryFactory.Create<UserEntity>();
-        _httpClient = httpClient;
     }
     
     public async Task<FunctionEntity?> FindFunctionByNameAndUserIdAsync(string functionName, string functionUserId)
@@ -174,8 +168,9 @@ public class FunctionsService : IFunctionsService
 
             // 5. Normalize function name and check if it exists for the user
             var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(manifest.name);
-            var existingFunction = await _repository.FindByCondition(f => f.name == normalizedFunctionName && f.userId == userId);
-            if (existingFunction != null)
+            var existingFunction = await _repository.FindByCondition(f => f.name == normalizedFunctionName);
+            // if existing function of the same name exists and belongs to the same user, update it
+            if (existingFunction != null && existingFunction.userId == userId)
             {
                 // Update existing function
                 existingFunction.runtimeLanguage = manifest.runtime.language;
@@ -188,14 +183,14 @@ public class FunctionsService : IFunctionsService
                 {
                     en = manifest.description
                 };
-
+                
                 if (manifest.parameters == null)
                 {
                     existingFunction.parameters = new List<Parameter>();
                 }
                 else
                 {
-                    List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
+                    List<Parameter> parameters = manifest.parameters?.Select(dto => new Parameter
                     {
                         name = dto.name,
                         description = new TranslatedField
@@ -204,16 +199,18 @@ public class FunctionsService : IFunctionsService
                         },
                         required = dto.required,
                         defaultValue = dto.defaultValue
-                    }).ToList();
+                    }).ToList() ?? new List<Parameter>();
+
                     existingFunction.parameters = parameters;
                 }
 
                 await _repository.UpsertEntity(existingFunction, existingFunction.Id, "Id");
-                return existingFunction.Id;
+                return existingFunction.name;
             }
             else
             {
                 // Save new function entity
+                
                 var functionEntity = new FunctionEntity
                 {
                     name = normalizedFunctionName,
@@ -234,7 +231,7 @@ public class FunctionsService : IFunctionsService
                 }
                 else
                 {
-                    List<Parameter> parameters = manifest.parameters.Select(dto => new Parameter
+                     List<Parameter> parameters = manifest.parameters?.Select(dto => new Parameter
                     {
                         name = dto.name,
                         description = new TranslatedField
@@ -243,11 +240,12 @@ public class FunctionsService : IFunctionsService
                         },
                         required = dto.required,
                         defaultValue = dto.defaultValue
-                    }).ToList();
+                    }).ToList() ?? new List<Parameter>();
                     functionEntity.parameters = parameters;
                 }
 
                 await _repository.Insert(functionEntity);
+                
                 return functionEntity.name;
             }
         }
@@ -261,49 +259,35 @@ public class FunctionsService : IFunctionsService
         }
     }
 
-    public async Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, Dictionary<string, string>? parameters)
+    public async Task<string> RunFunctionAsync(string? userId, string functionName, string userPrompt, Dictionary<string, string>? parameters)
     {
-        Console.WriteLine("RunFunctionAsync userId:" + userId);
-        // 1. Get the Function entity by userId and functionName
+        if (string.IsNullOrEmpty(functionName))
+        {
+            throw new ArgumentNullException(nameof(functionName));
+        }
+
+        if (string.IsNullOrEmpty(userPrompt))
+        {
+            throw new ArgumentNullException(nameof(userPrompt));
+        }
+        
         var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
-        var functionEntity = await _repository.FindByCondition(f => f.name == normalizedFunctionName && f.userId == userId);
+        var functionEntity = await _repository.FindByCondition(f => f.name == normalizedFunctionName);
 
         if (functionEntity == null)
         {
             throw new Exception("Function not found.");
         }
-        
-        return await RunFunctionInternal(functionEntity, userPrompt, parameters);
-    }
 
-    public async Task<string> RunFeaturedFunctionAsync(string functionId, string userPrompt, Dictionary<string, string>? parameters)
-    {
-        // get function by name and by username
-        // this is structure function.name + "-" + user.username;
-        // should be the last part of the functionId split by "-", functionId could have multiple "-" in it
-        var parts = functionId.Split("-");
-        if (parts.Length < 2)
+        // Check if the function is public or if the user is the owner of the function
+        if (functionEntity.IsPublic() || (userId != null && userId == functionEntity.userId))
         {
-            throw new Exception("Invalid functionId.");
+            return await RunFunctionInternal(functionEntity, userPrompt, parameters);
         }
-        var functionUsername = parts[^1];
-        var functionUser = await _userRepository.Get(functionUsername, "username");
-        if (functionUser?.Id == null)
-        {
-            throw new Exception("User not found.");
-        }
-        var functionName = string.Join("-", parts[..^1]);
-        // var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
-        var functionEntity = await _repository.FindByCondition(f => f.name == functionName && f.userId == functionUser.Id);
-        //
-        if (functionEntity == null)
-        {
-            throw new Exception("Function not found.");
-        }
-        
-        return await RunFunctionInternal(functionEntity, userPrompt, parameters);
-    }
 
+        throw new Exception("User does not have access to this function.");
+    }
+    
     private async Task<string> RunFunctionInternal(FunctionEntity functionEntity, string userPrompt, Dictionary<string, string>? parameters)
     {
         // 2. Get the promptUrl file
@@ -362,11 +346,11 @@ public class FunctionsService : IFunctionsService
         }
     }
     
-    public async Task<List<FunctionDto>> ListFunctionsAsync(string userId)
+    public async Task<List<BaseFunctionDto>> ListFunctionsAsync(string userId)
     {
         var functions = await _repository.ListByConditionAsync(f => f.userId == userId);
 
-        var result = new List<FunctionDto>();
+        var result = new List<BaseFunctionDto>();
 
         foreach (var function in functions)
         {
@@ -375,27 +359,27 @@ public class FunctionsService : IFunctionsService
 
             var authorName = !string.IsNullOrEmpty(user?.nickname) ? user.nickname : user?.username;
 
-            result.Add(new FunctionDto
+            result.Add(new BaseFunctionDto
             {
                 name = function.name ?? string.Empty, // Set to empty string if null
-                description = function.description?.en ?? string.Empty, // Fetch only the English description
+                description = function.description, // Ensure only English description is used
                 runtimeLanguage = function.runtimeLanguage ?? string.Empty, // Set to empty string if null
                 runtimeFramework = function.runtimeFramework ?? string.Empty, // Set to empty string if null
                 author = string.IsNullOrEmpty(authorName) ? null : authorName, // Set to null if empty
-                username = user.username ?? string.Empty, // Set to empty string if null
                 version = function.version ?? string.Empty, // Set to empty string if null
-                rating = function.rating ?? 0.0f, // Set to 0 if null (assuming rating is a numeric type)
+                rating = function.rating ?? 0.0, // Set to 0 if null (assuming rating is a numeric type)
                 downloads = function.downloads ?? new List<int>(), // Set to empty list if null
                 parameters = function.parameters?.Select(p => new ParameterDto
                 {
                     name = p.name ?? string.Empty, // Set to empty string if null
-                    description = p.description?.en ?? string.Empty, // Fetch only the English description
-                    required = p.required, // Assuming this is a boolean, keep as is
-                    defaultValue = p.defaultValue is string 
-                        ? p.defaultValue // If it's a string, keep it as string
-                        : p.defaultValue is IEnumerable<object> array 
-                            ? array.ToArray() // If it's an array, return the array
-                            : null // If it's neither, return null
+                    description = p.description, // Fetch only the English description
+                    required = p.required, // Boolean field
+                    defaultValue = p.defaultValue switch
+                    {
+                        string str => str, // Keep as string if it's a string
+                        IEnumerable<object> array => array.ToArray(), // Convert to array if it's IEnumerable
+                        _ => null // Otherwise, set to null
+                    }
                 }).ToList() ?? new List<ParameterDto>() // Initialize as empty list if parameters is null
             });
         }
@@ -403,12 +387,13 @@ public class FunctionsService : IFunctionsService
         return result;
     }
 
-    public async Task<List<FeaturedFunctionDto>> ListPublicFeaturedFunctionsAsync()
+
+    public async Task<List<BaseFunctionDto>> ListPublicFeaturedFunctionsAsync()
     {
         var publicFeaturedFunctions = await _repository.ListByConditionAsync(
             f => f.roles != null && f.roles.Contains(Roles.Public) && f.roles.Contains(Roles.Featured));
 
-        var result = new List<FeaturedFunctionDto>();
+        var result = new List<BaseFunctionDto>();
 
         foreach (var function in publicFeaturedFunctions)
         {
@@ -419,13 +404,10 @@ public class FunctionsService : IFunctionsService
             }
             
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
-            var functionId = function.name + "-" + user.username;
             
-            result.Add(new FeaturedFunctionDto
+            result.Add(new BaseFunctionDto
             {
-                id = functionId,
-                name = function.name ?? string.Empty,
-                slug = function.slug ?? string.Empty,
+                name = function.name,
                 title = new TranslatedField
                 {
                     en = function.title?.en ?? string.Empty,
@@ -450,7 +432,7 @@ public class FunctionsService : IFunctionsService
                 version = function.version ?? string.Empty,
                 rating = function.rating ?? 0f,
                 downloads = function.downloads ?? new List<int>(),
-                parameters = function.parameters?.Select(p => new FeaturedFunctionParameterDto
+                parameters = function.parameters?.Select(p => new ParameterDto
                 {
                     name = p.name ?? string.Empty,
                     description = new TranslatedField
@@ -465,31 +447,29 @@ public class FunctionsService : IFunctionsService
                         : p.defaultValue is IEnumerable<object> array
                             ? array.ToArray()
                             : null
-                }).ToList() ?? new List<FeaturedFunctionParameterDto>()
+                }).ToList() ?? new List<ParameterDto>()
             });
         }
 
         return result;
     }
     
-    public async Task<List<SearchResultFunctionDto>> SearchPublicFunctionsAsync(string query)
+    public async Task<List<BaseFunctionDto>> SearchPublicFunctionsAsync(string query)
     {
+        if (query == null || query.Length < 5)
+        {
+            return new List<BaseFunctionDto>();
+        }
+        
         // Search for functions with the "Public" role
         // Search for function that their description or name contains the query
         
-        // Build search expression for MongoDB query
-        // var searchResults = await _repository.ListByConditionAsync(f =>
-        //     f.roles != null && f.roles.Contains(Roles.Public) &&
-        //     (
-        //         Regex.IsMatch(f.name, query, RegexOptions.IgnoreCase) || 
-        //         (f.description != null && Regex.IsMatch(f.description.en ?? string.Empty, query, RegexOptions.IgnoreCase))
-        //     ));
-
         var regexQuery = new BsonRegularExpression(query, "i");  // 'i' makes the regex case-insensitive
 
         // Create filters for both the title and description fields
         var titleFilter = Builders<FunctionEntity>.Filter.Regex("title.en", regexQuery);
         var descriptionFilter = Builders<FunctionEntity>.Filter.Regex("description.en", regexQuery);
+        var nameFilter = Builders<FunctionEntity>.Filter.Regex("name", regexQuery);
 
         // Create a role filter to match "Public" roles
         var roleFilter = Builders<FunctionEntity>.Filter.Eq("roles", Roles.Public);
@@ -497,13 +477,13 @@ public class FunctionsService : IFunctionsService
         // Combine the filters using OR (|) for title and description and AND (&) for roles
         var finalFilter = Builders<FunctionEntity>.Filter.And(
             roleFilter,
-            Builders<FunctionEntity>.Filter.Or(titleFilter, descriptionFilter)
+            Builders<FunctionEntity>.Filter.Or(nameFilter, titleFilter, descriptionFilter)
         );
 
         // Fetch the results using the combined filter
         var searchResults = await _repository.ListByFilterAsync(finalFilter);
 
-        var result = new List<SearchResultFunctionDto>();
+        var result = new List<BaseFunctionDto>();
 
         foreach (var function in searchResults)
         {
@@ -514,12 +494,10 @@ public class FunctionsService : IFunctionsService
             }
             
             var authorName = !string.IsNullOrEmpty(user.nickname) ? user.nickname : user.username;
-            var functionId = function.name + "-" + user.username;
             
-            result.Add(new SearchResultFunctionDto
+            result.Add(new BaseFunctionDto
             {
-                id = functionId,
-                slug = function.slug ?? string.Empty,
+                name = function.name,
                 author = authorName,
                 rating = function.rating ?? 0f,
                 title = new TranslatedField
@@ -549,7 +527,6 @@ public class LambdaRunConfig
     public Dictionary<string, string> Env { get; set; }
 }
 
-
 partial class ManifestDto
 {
     public Manifest manifest;
@@ -559,9 +536,20 @@ public class Manifest
 {
     public string name { get; set; }
     public string? description { get; set; }
+
     public Runtime runtime { get; set; }
-    public List<ParameterDto> parameters { get; set; }
+
     public Entrypoint entrypoint { get; set; }
+
+    public List<ManifestParameter>? parameters { get; set; }
+}
+
+public class ManifestParameter
+{
+    public string name { get; set; }
+    public string description { get; set; }
+    public bool required { get; set; }
+    public object? defaultValue { get; set; }
 }
 
 public class Runtime

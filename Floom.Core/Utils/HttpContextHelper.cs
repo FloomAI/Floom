@@ -4,7 +4,7 @@ namespace Floom.Utils;
 
 public static class HttpContextHelper
 {
-    public static string GetApiKeyFromHttpContext()
+    public static string? GetApiKeyFromHttpContext()
     {
         var httpContext = new HttpContextAccessor().HttpContext;
         
