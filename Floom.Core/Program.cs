@@ -13,6 +13,7 @@ using MongoDB.Driver;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Floom.Server;
 using Microsoft.AspNetCore.HttpOverrides;
+using MongoDB.Bson.Serialization.Conventions;
 
 var allowedOrigins = new[] { "https://console.floom.ai", "https://www.floom.ai", "https://floom.ai" };
 // var allowedOrigins = new[] { "http://localhost:3000" };
@@ -31,6 +32,10 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 builder.Services.AddRouting(options => { options.LowercaseUrls = true; });
+
+// Register convention pack to ignore extra elements
+var conventionPack = new ConventionPack { new IgnoreExtraElementsConvention(true) };
+ConventionRegistry.Register("IgnoreExtraElements", conventionPack, type => true);
 
 // #region Versioning
 builder.Services.AddApiVersioning(o =>
