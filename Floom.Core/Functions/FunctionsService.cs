@@ -17,6 +17,7 @@ public interface IFunctionsService
     Task<string> DeployFunctionAsync(string filePath, string userId);
     Task<string> RunFunctionAsync(string userId, string functionName, string userPrompt, Dictionary<string, string>? parameters);
     Task<List<BaseFunctionDto>> ListFunctionsAsync(string userId);
+    Task<BaseFunctionDto> GetFunctionByNameAsync(string userId, string functionName);
     Task<List<BaseFunctionDto>> ListPublicFeaturedFunctionsAsync();
     Task<List<BaseFunctionDto>> SearchPublicFunctionsAsync(string query);
     Task AddRolesToFunctionAsync(string functionName, string functionUserId, string userId);
@@ -385,6 +386,45 @@ public class FunctionsService : IFunctionsService
         }
 
         return result;
+    }
+
+    public async Task<BaseFunctionDto> GetFunctionByNameAsync(string? userId, string functionName)
+    {
+       // if userId is null, then function must have public role
+       // otherwise, function must have the same userId
+         
+         var normalizedFunctionName = FunctionsUtils.NormalizeFunctionName(functionName);
+         var function = await _repository.FindByCondition(f => f.name == normalizedFunctionName && f.roles.Contains(Roles.Public));
+
+         if(function == null)
+         {
+             return null;
+         }
+         
+         var result = new BaseFunctionDto()
+         {
+             name = function.name,
+             description = function.description,
+             runtimeLanguage = function.runtimeLanguage ?? string.Empty,
+             runtimeFramework = function.runtimeFramework ?? string.Empty,
+             version = function.version ?? string.Empty,
+             rating = function.rating ?? 0.0,
+             downloads = function.downloads ?? new List<int>(),
+             parameters = function.parameters?.Select(p => new ParameterDto
+             {
+                 name = p.name ?? string.Empty,
+                 description = p.description,
+                 required = p.required,
+                 defaultValue = p.defaultValue switch
+                 {
+                     string str => str,
+                     IEnumerable<object> array => array.ToArray(),
+                     _ => null
+                 }
+             }).ToList() ?? new List<ParameterDto>()
+         };
+         
+         return result;
     }
 
 

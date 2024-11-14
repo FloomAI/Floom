@@ -72,6 +72,19 @@ public class FunctionsController : ControllerBase
             return Ok(publicFeaturedFunctions);
         }
         
+        [HttpGet("{name}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetFunctionByName(string name)
+        {
+            var userId = HttpContextHelper.GetUserIdFromHttpContext();
+            var function = await _functionsService.GetFunctionByNameAsync(userId, name);
+            if (function == null)
+            {
+                return NotFound(new { message = $"Function {name} not found" });
+            }
+            return Ok(function);
+        }
+        
         [HttpPost("search")]
         [AllowAnonymous]
         public async Task<IActionResult> SearchPublicFunctions([FromBody] SearchRequest request)
