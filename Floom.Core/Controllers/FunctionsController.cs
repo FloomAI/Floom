@@ -49,6 +49,7 @@ public class FunctionsController : ControllerBase
         }
 
         [HttpPost("run")]
+        [AllowAnonymous]
         public async Task<IActionResult> RunFunction([FromBody] RunFunctionRequest request)
         {
             var userId = HttpContextHelper.GetUserIdFromHttpContext();
